@@ -53,7 +53,11 @@ Use the following metadata for the GitHub repository `About` panel.
 
 ### Description / 描述
 
+**English**
+
 `ParrotSoundReVue - An open-source AI voice platform for dubbing, voice cloning, and teaching content creation.`
+
+**中文**
 
 `鹦音坊 - 基于 AI 语音大模型的智能声音处理软件`
 
@@ -66,6 +70,17 @@ Use the following metadata for the GitHub repository `About` panel.
 `ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
 
 ### Suggested GitHub About Layout / 建议的 About 结构
+
+**English Version**
+
+- `Description`:
+  `ParrotSoundReVue - An open-source AI voice platform for dubbing, voice cloning, and teaching content creation.`
+- `Website`:
+  `https://github.com/Wanfeng1028/ParrotSoundReVue#readme`
+- `Topics`:
+  `ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
+
+**中文版本**
 
 - `Description`:
   `鹦音坊 - 基于 AI 语音大模型的智能声音处理软件`
