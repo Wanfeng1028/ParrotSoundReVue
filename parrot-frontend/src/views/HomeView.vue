@@ -294,6 +294,8 @@ const handleLearnMore = () => {
   color: transparent;
   margin: 0 0 14px;
   line-height: 1.02;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .home-banner__title::after {
@@ -611,6 +613,10 @@ const handleLearnMore = () => {
     padding: 28px 20px 36px;
     max-width: none;
     background: #ffffff;
+  }
+
+  .home-banner__title {
+    font-size: clamp(34px, 8vw, 52px);
   }
 
   .section-two__content {

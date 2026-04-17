@@ -145,16 +145,19 @@
 .social-button {
   width: 100%;
   min-height: 52px;
+  padding: 0 18px;
   justify-content: flex-start;
   border-radius: 999px;
   border-color: #eceef3;
   background: #ffffff;
   color: #20222a;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 
 .social-button:hover,
 .social-button:focus-visible {
   border-color: #d8dde8;
+  background: #ffffff;
   color: #111827;
 }
 
@@ -170,12 +173,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #f4f6fb;
-  font-size: 14px;
-  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.social-button__icon-svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .verify-box {

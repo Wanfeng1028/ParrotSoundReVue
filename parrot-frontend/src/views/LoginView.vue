@@ -7,9 +7,9 @@
     <div class="auth-page__overlay"></div>
 
     <section class="auth-card">
-      <div class="auth-card__header">
+      <div class="auth-card__header auth-card__header--login">
         <h1>登录</h1>
-        <p>还没有账号？<RouterLink to="/register">立即注册</RouterLink></p>
+        <p class="auth-card__register-tip">还没有账号？<RouterLink to="/register">立即注册</RouterLink></p>
       </div>
 
       <el-form label-position="top" class="auth-form">
@@ -36,7 +36,7 @@
           </el-input>
         </el-form-item>
 
-        <div class="auth-card__meta">
+        <div class="auth-card__meta auth-card__meta--login">
           <el-link :underline="false" @click="$router.push('/re-password')">忘记密码？</el-link>
         </div>
 
@@ -52,10 +52,44 @@
           v-for="provider in socialProviders"
           :key="provider.label"
           plain
+          round
           class="social-button"
           @click="handleSocialLogin(provider.label)"
         >
-          <span class="social-button__icon">{{ provider.icon }}</span>
+          <span class="social-button__icon">
+            <svg v-if="provider.key === 'google'" viewBox="0 0 24 24" aria-hidden="true" class="social-button__icon-svg">
+              <path
+                fill="#EA4335"
+                d="M12 10.2v3.9h5.4c-.2 1.2-.9 2.3-1.9 3.1l3 2.3c1.8-1.6 2.8-4 2.8-6.9 0-.7-.1-1.5-.2-2.2H12z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 21c2.6 0 4.8-.9 6.4-2.5l-3-2.3c-.8.6-1.9 1-3.4 1-2.6 0-4.8-1.7-5.5-4.1l-3.1 2.4C5 18.8 8.2 21 12 21z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M6.5 13.1c-.2-.6-.3-1.3-.3-2.1s.1-1.4.3-2.1l-3.1-2.4C2.5 8 2 9.5 2 11s.5 3 1.4 4.4l3.1-2.3z"
+              />
+              <path
+                fill="#4285F4"
+                d="M12 4.8c1.4 0 2.7.5 3.7 1.5l2.8-2.8C16.8 1.9 14.6 1 12 1 8.2 1 5 3.2 3.4 6.6L6.5 9C7.2 6.5 9.4 4.8 12 4.8z"
+              />
+            </svg>
+            <svg v-else-if="provider.key === 'facebook'" viewBox="0 0 24 24" aria-hidden="true" class="social-button__icon-svg">
+              <circle cx="12" cy="12" r="11" fill="#1877F2" />
+              <path fill="#FFF" d="M13.3 20v-6.3h2.1l.3-2.4h-2.4V9.8c0-.7.2-1.2 1.2-1.2h1.3V6.4c-.2 0-1-.1-1.9-.1-1.9 0-3.1 1.1-3.1 3.3v1.7H8.7v2.4h2.1V20h2.5z" />
+            </svg>
+            <svg v-else-if="provider.key === 'x'" viewBox="0 0 24 24" aria-hidden="true" class="social-button__icon-svg">
+              <circle cx="12" cy="12" r="11" fill="#111" />
+              <path fill="#FFF" d="M8 7h2.3l2.4 3.4L15.7 7H17l-3.7 4.3L17 17h-2.3l-2.6-3.8L8.8 17H7.5l3.9-4.5z" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true" class="social-button__icon-svg">
+              <path
+                fill="#111"
+                d="M16.7 12.8c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.7-1.7-3.3-1.7-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-3-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.1 9.1.7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.2 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.1-2.4-.1 0-2.1-.8-2.1-3zM14.4 6.3c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.7-1 1.7-.9 2.7 1 0 1.9-.5 2.5-1.3z"
+              />
+            </svg>
+          </span>
           <span>{{ provider.label }}</span>
         </el-button>
       </div>
@@ -83,10 +117,10 @@ const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta
 const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href;
 
 const socialProviders = [
-  { label: "使用 Google 登录", icon: "G" },
-  { label: "使用 Facebook 登录", icon: "F" },
-  { label: "使用 X 登录", icon: "X" },
-  { label: "使用 Apple 登录", icon: "A" },
+  { key: "google", label: "使用 Google 登录" },
+  { key: "facebook", label: "使用 Facebook 登录" },
+  { key: "x", label: "使用 X 登录" },
+  { key: "apple", label: "使用 Apple 登录" },
 ];
 
 const fillDemoAccount = () => {
@@ -98,3 +132,15 @@ const handleSocialLogin = (provider: string) => {
   ElMessage.info(`${provider} 暂未接入`);
 };
 </script>
+
+<style scoped>
+.auth-card__header--login,
+.auth-card__register-tip,
+.auth-card__meta--login {
+  text-align: left;
+}
+
+.auth-card__meta--login {
+  justify-content: flex-start;
+}
+</style>

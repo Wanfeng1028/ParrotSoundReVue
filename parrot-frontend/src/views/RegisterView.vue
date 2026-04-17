@@ -7,9 +7,9 @@
     <div class="auth-page__overlay"></div>
 
     <section class="auth-card auth-card--wide">
-      <div class="auth-card__header">
+      <div class="auth-card__header auth-card__header--register">
         <h1>创建账号</h1>
-        <p>已有账号？<RouterLink to="/login">去登录</RouterLink></p>
+        <p class="auth-card__register-tip">已有账号？<RouterLink to="/login">去登录</RouterLink></p>
       </div>
 
       <el-form label-position="top" class="auth-form">
@@ -81,3 +81,10 @@ const { registerForm, isCounting, count, loading, hanadleSendCode, hanadleRegite
 const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta.url).href;
 const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href;
 </script>
+
+<style scoped>
+.auth-card__header--register,
+.auth-card__register-tip {
+  text-align: left;
+}
+</style>
