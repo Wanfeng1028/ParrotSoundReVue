@@ -1,80 +1,72 @@
-import { ref } from 'vue'
-
-export interface VoiceCard {
-  id: number
-  name: string
-  username: string
-  date: string
-  tags: string[]
-  stats: {
-    play: number
-    like: number
-    share: number
-    star: number
-  }
-  avatar: string
-}
-
-export interface RankItem {
-  id: number
-  name: string
-  username: string
-  likes: number
-  avatar: string
-}
+import { reactive, ref } from "vue";
+import { ElMessage } from "element-plus";
+import {
+  favoriteCommunityVoice,
+  fetchCommunityRankings,
+  fetchCommunityVoices,
+  likeCommunityVoice,
+  useCommunityVoice,
+} from "../api/community";
+import type { VoiceModel } from "../types";
 
 export function useCommunityLogic() {
-  
-  // === 状态 ===
-  const sortValue = ref('推荐')
-  const langValue = ref('中文')
-  const searchText = ref('')
+  const filters = reactive({
+    sort: "recommend",
+    language: "all",
+    search: "",
+  });
+  const voiceList = ref<Array<VoiceModel & { username: string; userAvatar: string; date: string; desc: string }>>([]);
+  const rankList = ref<Array<{ id: number; name: string; username: string; likes: number; userAvatar: string; avatar: string }>>([]);
+  const loading = ref(false);
 
-  // === 模拟左侧列表数据 ===
-  const voiceList = ref<VoiceCard[]>([
-    {
-      id: 1,
-      name: '刘德华',
-      username: '用户89757',
-      date: '2025/1/22',
-      tags: ['古灵精怪', '磁性'],
-      stats: { play: 2131, like: 2131, share: 2131, star: 2131 },
-      avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-    },
-    {
-      id: 2,
-      name: '孙燕姿',
-      username: '音乐人小A',
-      date: '2025/1/22',
-      tags: ['清澈', '高音'],
-      stats: { play: 1099, like: 888, share: 120, star: 560 },
-      avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-    },
-    {
-      id: 3,
-      name: '周杰伦',
-      username: 'JayFan',
-      date: '2025/1/23',
-      tags: ['R&B', '低沉'],
-      stats: { play: 5555, like: 4321, share: 1111, star: 999 },
-      avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+  const load = async () => {
+    loading.value = true;
+    try {
+      const [voicesResponse, rankingsResponse] = await Promise.all([
+        fetchCommunityVoices(filters),
+        fetchCommunityRankings(),
+      ]);
+      voiceList.value = voicesResponse.data;
+      rankList.value = rankingsResponse.data;
+    } finally {
+      loading.value = false;
     }
-  ])
+  };
 
-  // === 模拟右侧排行榜数据 ===
-  const rankList = ref<RankItem[]>([
-    { id: 1, name: '刘德华', username: '用户名', likes: 2131, avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 2, name: '林俊杰', username: '用户名', likes: 2131, avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 3, name: '陈奕迅', username: '用户名', likes: 2131, avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 4, name: '邓紫棋', username: '用户名', likes: 2131, avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 5, name: '王力宏', username: '用户名', likes: 2131, avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  ])
+  const updateVoice = (voiceId: number, updater: (voice: typeof voiceList.value[number]) => void) => {
+    const target = voiceList.value.find((item) => item.id === voiceId);
+    if (target) updater(target);
+  };
+
+  const likeVoice = async (voiceId: number) => {
+    const response = await likeCommunityVoice(voiceId);
+    updateVoice(voiceId, (item) => {
+      item.stats = response.data.stats;
+    });
+    ElMessage.success("点赞成功");
+  };
+
+  const favoriteVoice = async (voiceId: number) => {
+    const response = await favoriteCommunityVoice(voiceId);
+    updateVoice(voiceId, (item) => {
+      item.stats = response.data.stats;
+    });
+    ElMessage.success("收藏成功");
+  };
+
+  const useVoice = async (voiceId: number) => {
+    await useCommunityVoice(voiceId);
+    ElMessage.success("声音已加入创作流程，可前往智能配音页使用");
+  };
 
   return {
-    sortValue,
-    langValue,
-    searchText,
+    filters,
     voiceList,
-    rankList
-  }
+    rankList,
+    loading,
+    load,
+    likeVoice,
+    favoriteVoice,
+    useVoice,
+  };
 }

@@ -1,95 +1,142 @@
-import {ref , reactive} from 'vue'
-import {ElMessage} from 'element-plus'
+import { computed, reactive, ref } from "vue";
+import { ElMessage } from "element-plus";
+import { exportDubbing, fetchDubbingOptions, generateDubbingDraft, previewDubbing } from "../api/dubbing";
 
-//定义配音员的数据类型
-interface Voice{
-    id:number;
-    name:string;
-    tag:string;//配音员标签
-    avatar:string;//头像图片路径
+interface VoiceOption {
+  id: number;
+  name: string;
+  tag: string;
+  avatar: string;
+  sampleAudioUrl: string;
 }
 
-export function useDubbingLogic(){
-    //1.核心数据
-    const textContent = ref('');//用户输入的文案
-    const aiInput = ref(''); // 顶部 AI 生成文案的输入框
+export function useDubbingLogic() {
+  const textContent = ref("");
+  const aiInput = ref("");
+  const searchText = ref("");
+  const loading = ref(false);
+  const generating = ref(false);
+  const availableModels = ref<Array<{ id: string; label: string }>>([]);
+  const selectedModel = ref("");
+  const voiceList = ref<VoiceOption[]>([]);
+  const currentVoice = ref<VoiceOption | null>(null);
+  const emotionList = ref(["默认"]);
+  const currentEmotion = ref("默认");
+  const settings = reactive({
+    speed: 1,
+    volume: 80,
+    pitch: 55,
+  });
 
-    //播放设置
-    const settings = reactive({
-        speed:1.0,//播放速s度
-        volume:1.0,//音量
-        pitch:1.0,//音高，语调
-        bgMusic:null,//背景音乐文件路径
+  const filteredVoiceList = computed(() =>
+    voiceList.value.filter((voice) =>
+      `${voice.name}${voice.tag}`.toLowerCase().includes(searchText.value.toLowerCase()),
+    ),
+  );
 
-    })
+  const loadOptions = async () => {
+    loading.value = true;
+    try {
+      const response = await fetchDubbingOptions();
+      voiceList.value = response.data.voices;
+      currentVoice.value = response.data.voices[0] || null;
+      emotionList.value = response.data.emotions;
+      currentEmotion.value = response.data.emotions[0] || "默认";
+      availableModels.value = response.data.models.map((item) => ({ id: item.id, label: item.label }));
+      selectedModel.value = response.data.currentModel?.id || response.data.models[0]?.id || "";
+    } finally {
+      loading.value = false;
+    }
+  };
 
-    //2.模拟配音员列表
-    const voiceList = ref<Voice[]>([
-        //从后端的api获取数据，这里是模拟的数据
-        { id: 1, name: '谈小语', tag: '多情感', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-        { id: 2, name: '云希', tag: '新闻', avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' },
-        { id: 3, name: '晓晓', tag: '活泼', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-        { id: 4, name: '云野', tag: '沉稳', avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' },
-    ])
-    //3.当前选中的配音员列表
-    const currentVoice = ref<Voice>(voiceList.value[0] as Voice);
-    //4.动作函数
-    //切换配音员
-    const selectVoice = (voice:Voice) => {
-        currentVoice.value = voice;
-    }
-    // 4. 情感列表 (对应右下角的情感按钮)
-    const emotionList = ref([
-        '默认', '热情', '兴奋', 
-        '友好', '轻松', '愉快', 
-        '严肃', '不满', '生气'
-    ]);
-    const currentEmotion = ref('默认'); // 当前选中的情感
-    const selectEmotion = (emotion: string) => {
-        currentEmotion.value = emotion;
-    }
-    //试听
-    const handlePlay = ( ) => {
-        if(!textContent.value){
-            ElMessage.warning('请输入要配音的文字');
-            return;
-        }
-        ElMessage.success(`试听成功，使用声音:${currentVoice.value.name}`);
-        //调用后端的api，传入textContent.value,currentVoice.value.id,setting
-        //返回一个音频文件路径，播放该文件
-    } 
-    //清空文本
-    const handleClear = () => {
-        textContent.value = '';
-    }
-    const handleExport = () => {
-        if (!textContent.value) {
-             ElMessage.warning('没有内容可以导出');
-             return;
-        }
-        ElMessage.success('正在导出音频...');
-    }
-    // AI 生成文案 (模拟)
-    const handleAIGenerate = () => {
-        if(!aiInput.value) return ElMessage.warning('请输入描述');
-        textContent.value = "AI 正在根据您的需求生成文案...\n(这里是模拟的生成结果)";
-    }
-    return {
-        textContent,
-        aiInput,
-        currentVoice,
-        voiceList,
-        settings,
-        emotionList,
-        currentEmotion,
-        selectVoice,
-        selectEmotion,
-        handlePlay,
-        handleClear,
-        handleExport,
-        handleAIGenerate
-    }
+  const selectVoice = (voice: VoiceOption) => {
+    currentVoice.value = voice;
+  };
 
+  const selectEmotion = (emotion: string) => {
+    currentEmotion.value = emotion;
+  };
 
+  const currentSettings = () => ({
+    volume: settings.volume,
+    pitch: settings.pitch,
+    speed: settings.speed,
+    emotion: currentEmotion.value,
+  });
 
+  const playAudio = (url: string) => {
+    const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}${url}`);
+    audio.play().catch(() => {
+      ElMessage.warning("音频无法播放，请稍后重试");
+    });
+  };
+
+  const handlePlay = async () => {
+    if (!textContent.value || !currentVoice.value) {
+      ElMessage.warning("请输入文案并选择声音");
+      return;
+    }
+    const response = await previewDubbing({
+      title: textContent.value.slice(0, 16) || "试听音频",
+      text: textContent.value,
+      voiceId: currentVoice.value.id,
+      settings: currentSettings(),
+    });
+    playAudio(response.data.audioUrl);
+    ElMessage.success("试听任务已生成");
+  };
+
+  const handleExport = async () => {
+    if (!textContent.value || !currentVoice.value) {
+      ElMessage.warning("请输入文案并选择声音");
+      return;
+    }
+    const response = await exportDubbing({
+      title: textContent.value.slice(0, 16) || "导出音频",
+      text: textContent.value,
+      voiceId: currentVoice.value.id,
+      settings: currentSettings(),
+    });
+    playAudio(response.data.audioUrl);
+    ElMessage.success("导出成功，已同步到音频记录");
+  };
+
+  const handleAIGenerate = async () => {
+    if (!aiInput.value) {
+      ElMessage.warning("请输入创作需求");
+      return;
+    }
+    generating.value = true;
+    try {
+      const response = await generateDubbingDraft({
+        prompt: aiInput.value,
+        model: selectedModel.value,
+      });
+      textContent.value = response.data.content;
+      ElMessage.success("AI 文稿生成成功");
+    } finally {
+      generating.value = false;
+    }
+  };
+
+  return {
+    loading,
+    generating,
+    textContent,
+    aiInput,
+    searchText,
+    currentVoice,
+    voiceList: filteredVoiceList,
+    settings,
+    emotionList,
+    currentEmotion,
+    availableModels,
+    selectedModel,
+    loadOptions,
+    selectVoice,
+    selectEmotion,
+    handlePlay,
+    handleExport,
+    handleAIGenerate,
+  };
 }

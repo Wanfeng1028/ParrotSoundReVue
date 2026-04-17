@@ -1,86 +1,98 @@
-import { reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-
-// 定义幻灯片/场景接口
-export interface Slide {
-  id: number
-  thumbnail: string
-  isActive: boolean
-}
+import { reactive, ref } from "vue";
+import { ElMessage } from "element-plus";
+import { fetchTeachingProjects, generateTeachingScript, saveTeachingProject } from "../api/teaching";
+import type { AiModelOption, TeachingProject } from "../types";
 
 export function useEducationLogic() {
-  
-  // === 1. 顶部设置 ===
-  const canvasSettings = reactive({
-    ratio: '16:9',
-    resolution: '1080P',
-    bitrate: '默认'
-  })
+  const settings = reactive({
+    ratio: "16:9",
+    resolution: "1080P",
+    bitrate: "default",
+  });
+  const slides = ref([1, 2, 3]);
+  const activeSlideIndex = ref(0);
+  const showSubtitle = ref(true);
+  const isTrackExpanded = ref(false);
+  const textContent = ref("");
+  const searchText = ref("");
+  const filter = reactive({ gender: "all", pose: "all" });
+  const zoomLevel = ref(50);
+  const projectTitle = ref("未命名教学项目");
+  const projects = ref<TeachingProject[]>([]);
+  const aiModels = ref<AiModelOption[]>([]);
+  const selectedModel = ref("");
+  const aiPrompt = ref("");
+  const loading = ref(false);
 
-  // === 2. 左侧：幻灯片列表 ===
-  const currentMode = ref<'ppt' | 'video'>('ppt') // 模式切换
-  const slides = ref<Slide[]>([
-    { id: 1, thumbnail: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg', isActive: true },
-    { id: 2, thumbnail: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg', isActive: false },
-    { id: 3, thumbnail: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg', isActive: false },
-  ])
+  const loadProjects = async () => {
+    const response = await fetchTeachingProjects();
+    projects.value = response.data.projects;
+    aiModels.value = response.data.models;
+    selectedModel.value = response.data.models[0]?.id || "";
+    if (response.data.projects[0]) {
+      const project = response.data.projects[0];
+      projectTitle.value = project.title;
+      textContent.value = project.script;
+      settings.ratio = project.ratio;
+      settings.resolution = project.resolution;
+      settings.bitrate = project.bitrate;
+      showSubtitle.value = project.subtitleEnabled;
+    }
+  };
 
-  // === 3. 中间：编辑器状态 ===
-  const textContent = ref('')
-  const isPlaying = ref(false)
-  const showSubtitle = ref(true)
-  const isTrackExpanded = ref(false) // 是否展开轨道 (底部那个抽屉)
-  
-  // 播放进度 (模拟)
-  const currentTime = ref('00:00')
-  //const totalTime = ref('00:00:00')
+  const handleSave = async (status = "draft") => {
+    loading.value = true;
+    try {
+      await saveTeachingProject({
+        title: projectTitle.value,
+        script: textContent.value,
+        ratio: settings.ratio,
+        resolution: settings.resolution,
+        bitrate: settings.bitrate,
+        subtitleEnabled: showSubtitle.value,
+        status,
+      });
+      await loadProjects();
+      ElMessage.success(status === "completed" ? "教学任务已生成" : "教学项目已保存");
+    } finally {
+      loading.value = false;
+    }
+  };
 
-  // === 4. 右侧：素材库 ===
-  const activeRightTab = ref('digital') // digital, voice, bg, text, music
-  const searchText = ref('')
-  
-  // 模拟数字人列表
-  const avatarList = ref([
-    { id: 1, img: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 2, img: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 3, img: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-    { id: 4, img: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' },
-  ])
+  const handleGenerate = async () => handleSave("completed");
 
-
-  // === 动作函数 ===
-  const toggleMode = () => {
-    currentMode.value = currentMode.value === 'ppt' ? 'video' : 'ppt'
-    ElMessage.success(`已切换至${currentMode.value === 'ppt' ? 'PPT' : '视频'}模式`)
-  }
-
-  const selectSlide = (id: number) => {
-    slides.value.forEach(s => s.isActive = (s.id === id))
-  }
-
-  const toggleTrack = () => {
-    isTrackExpanded.value = !isTrackExpanded.value
-  }
-
-  const handleSave = () => ElMessage.success('保存成功')
-  const handleGenerate = () => ElMessage.success('开始生成视频')
+  const generateByAi = async () => {
+    if (!aiPrompt.value) {
+      ElMessage.warning("请输入 AI 帮写需求");
+      return;
+    }
+    const response = await generateTeachingScript({
+      prompt: aiPrompt.value,
+      model: selectedModel.value,
+    });
+    textContent.value = response.data.content;
+    ElMessage.success("AI 讲解稿已生成");
+  };
 
   return {
-    canvasSettings,
-    currentMode,
+    settings,
+    activeSlideIndex,
     slides,
-    textContent,
-    isPlaying,
     showSubtitle,
     isTrackExpanded,
-    currentTime,
-    activeRightTab,
-    avatarList,
+    textContent,
     searchText,
-    toggleMode,
-    selectSlide,
-    toggleTrack,
+    filter,
+    zoomLevel,
+    projectTitle,
+    projects,
+    aiModels,
+    selectedModel,
+    aiPrompt,
+    loading,
+    loadProjects,
     handleSave,
-    handleGenerate
-  }
+    handleGenerate,
+    generateByAi,
+  };
 }

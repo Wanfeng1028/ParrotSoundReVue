@@ -1,39 +1,39 @@
-import { ref, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { reactive, ref } from "vue";
+import { ElMessage } from "element-plus";
+import { fetchTutorials, submitFeedback as submitFeedbackApi } from "../api/help";
+import type { TutorialItem } from "../types";
 
 export function useHelpLogic() {
-  
-  // 当前选中的 Tab
-  const activeTab = ref('guide') // guide, dubbing, clone, education, feedback
-
-  // 意见反馈表单
+  const activeTab = ref("guide");
+  const videoList = ref<TutorialItem[]>([]);
   const feedbackForm = reactive({
-    usageTime: '不到 1 个月', // 默认选中第一个
-    content: ''
-  })
+    usageTime: "不到 1 个月",
+    content: "",
+  });
 
-  // 模拟教程视频数据
-  const videoList = ref([
-    { id: 1, title: '基础入门教程', duration: '00:30' },
-    { id: 2, title: '进阶使用技巧', duration: '00:30' },
-  ])
+  const switchTab = async (tab: string) => {
+    activeTab.value = tab;
+    if (tab !== "feedback") {
+      const response = await fetchTutorials(tab);
+      videoList.value = response.data;
+    }
+  };
 
-  // === 动作 ===
-  const switchTab = (tab: string) => {
-    activeTab.value = tab
-  }
-
-  const submitFeedback = () => {
-    if(!feedbackForm.content) return ElMessage.warning('请填写描述信息')
-    ElMessage.success('反馈提交成功！')
-    feedbackForm.content = ''
-  }
+  const submitFeedback = async () => {
+    if (!feedbackForm.content) {
+      ElMessage.warning("请填写反馈内容");
+      return;
+    }
+    await submitFeedbackApi(feedbackForm);
+    feedbackForm.content = "";
+    ElMessage.success("反馈提交成功");
+  };
 
   return {
     activeTab,
     feedbackForm,
     videoList,
     switchTab,
-    submitFeedback
-  }
+    submitFeedback,
+  };
 }

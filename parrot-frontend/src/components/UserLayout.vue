@@ -11,7 +11,7 @@
           <span>账号信息</span>
         </el-menu-item>
         <el-menu-item index="/user/history">
-          <el-icon><files /></el-icon>
+          <el-icon><Files /></el-icon>
           <span>历史作品</span>
         </el-menu-item>
         <el-menu-item index="/user/interaction">

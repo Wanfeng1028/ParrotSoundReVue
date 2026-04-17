@@ -135,7 +135,7 @@
           <ul>
             <li><router-link to="/dubbing">智能配音</router-link></li>
             <li><router-link to="/clone">声音克隆</router-link></li>
-            <li><router-link to="/teaching">教育教学</router-link></li>
+            <li><router-link to="/teching">教育教学</router-link></li>
           </ul>
         </div>
         <div class="footer-column">

@@ -1,54 +1,49 @@
 <template>
   <div class="user-info-container">
-    
     <div class="info-card">
       <h3 class="card-title">完善账户信息</h3>
-      
+
       <div class="profile-content">
         <div class="avatar-section">
-          <el-upload
-            class="avatar-uploader"
-            action="#"
-            :show-file-list="false"
-            :auto-upload="false"
-          >
-            <div class="avatar-wrapper">
-              <el-avatar :size="80" src="" class="default-avatar">
-                <template #default>
-                  <img src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" style="width: 100%; height: 100%; opacity: 0.5;" />
-                </template>
-              </el-avatar>
-              <div class="upload-icon-overlay">
-                <el-icon><Upload /></el-icon>
-              </div>
+          <label class="avatar-wrapper">
+            <input class="hidden-input" type="file" accept="image/*" @change="onAvatarChange" />
+            <el-avatar :size="80" :src="previewAvatar || authStore.user?.avatarUrl || undefined" class="default-avatar">
+              {{ (profileForm.username || authStore.user?.username || "P").slice(0, 1) }}
+            </el-avatar>
+            <div class="upload-icon-overlay">
+              <el-icon><Upload /></el-icon>
             </div>
-          </el-upload>
+          </label>
           <div class="avatar-label">头像</div>
         </div>
 
-        <el-form :model="userInfo" class="profile-form" label-position="left" label-width="70px">
+        <el-form :model="profileForm" class="profile-form" label-position="left" label-width="70px">
           <el-row :gutter="60">
             <el-col :span="12">
               <el-form-item label="用户名:">
-                <el-input v-model="userInfo.username" class="custom-gray-input" placeholder="xxxxxx" />
+                <el-input v-model="profileForm.username" class="custom-gray-input" placeholder="请输入用户名" />
               </el-form-item>
               <el-form-item label="手机号:">
-                <el-input v-model="userInfo.phone" class="custom-gray-input" placeholder="xxxxxx" />
+                <el-input v-model="profileForm.phone" class="custom-gray-input" placeholder="请输入手机号" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="年龄:">
-                <el-input v-model="userInfo.age" class="custom-gray-input" placeholder="xxxxxx" />
+                <el-input v-model="profileForm.age" class="custom-gray-input" placeholder="请输入年龄" />
               </el-form-item>
               <el-form-item label="性别:">
-                <div class="gender-text">男</div>
+                <el-select v-model="profileForm.gender" class="custom-gray-input">
+                  <el-option label="男" value="男" />
+                  <el-option label="女" value="女" />
+                  <el-option label="未设置" value="未设置" />
+                </el-select>
               </el-form-item>
             </el-col>
           </el-row>
 
           <div class="profile-actions">
-            <el-button type="primary" class="save-btn">保存</el-button>
-            <el-button class="cancel-btn">取消</el-button>
+            <el-button type="primary" class="save-btn" @click="saveProfile">保存</el-button>
+            <el-button class="cancel-btn" @click="resetProfile">取消</el-button>
           </div>
         </el-form>
       </div>
@@ -56,10 +51,10 @@
 
     <div class="info-card mt-20">
       <h3 class="card-title">修改密码</h3>
-      
+
       <div class="security-section">
         <p class="sec-subtitle">请回答密保问题</p>
-        
+
         <el-form :model="securityForm" label-position="top" class="security-form">
           <el-row :gutter="60">
             <el-col :span="12">
@@ -75,208 +70,117 @@
             </el-col>
 
             <el-col :span="12">
-              <el-form-item label="密码">
-                <el-input 
-                  v-model="securityForm.password" 
-                  type="password" 
-                  show-password
-                  class="custom-gray-input" 
-                  placeholder="请输入密码 (6-20个数字或字母)" 
-                />
+              <el-form-item label="新密码">
+                <el-input v-model="securityForm.password" type="password" show-password class="custom-gray-input" placeholder="请输入密码" />
               </el-form-item>
               <el-form-item label="确认新密码">
-                <el-input 
-                  v-model="securityForm.confirmPassword" 
-                  type="password" 
-                  show-password
-                  class="custom-gray-input" 
-                  placeholder="请输入密码 (6-20个数字或字母)" 
-                />
+                <el-input v-model="securityForm.confirmPassword" type="password" show-password class="custom-gray-input" placeholder="请再次输入密码" />
               </el-form-item>
-              
+
               <div class="password-actions">
-                <el-button type="primary" class="confirm-btn">确认修改密码</el-button>
+                <el-button type="primary" class="confirm-btn" @click="savePassword">确认修改密码</el-button>
               </div>
             </el-col>
           </el-row>
         </el-form>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
-import { Upload } from '@element-plus/icons-vue'
+import { onMounted, reactive, ref } from "vue";
+import { ElMessage } from "element-plus";
+import { Upload } from "@element-plus/icons-vue";
+import { updatePassword, updateProfile } from "../../api/users";
+import { useAuthStore } from "../../stores/auth";
 
-const userInfo = reactive({
-  username: 'xxxxxx',
-  phone: 'xxxxxx',
-  age: 'xxxxxx',
-  gender: '男'
-})
+const authStore = useAuthStore();
+const previewAvatar = ref("");
+const avatarFile = ref<File | null>(null);
+const profileForm = reactive({
+  username: "",
+  phone: "",
+  age: "",
+  gender: "未设置",
+});
 
 const securityForm = reactive({
-  q1: '',
-  q2: '',
-  q3: '',
-  password: '',
-  confirmPassword: ''
-})
+  q1: "",
+  q2: "",
+  q3: "",
+  password: "",
+  confirmPassword: "",
+});
+
+const syncProfile = () => {
+  profileForm.username = authStore.user?.username || "";
+  profileForm.phone = authStore.user?.phone || "";
+  profileForm.age = authStore.user?.age || "";
+  profileForm.gender = authStore.user?.gender || "未设置";
+  securityForm.q1 = authStore.user?.securityAnswers?.q1 || "";
+  securityForm.q2 = authStore.user?.securityAnswers?.q2 || "";
+  securityForm.q3 = authStore.user?.securityAnswers?.q3 || "";
+};
+
+const onAvatarChange = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  avatarFile.value = file;
+  previewAvatar.value = URL.createObjectURL(file);
+};
+
+const saveProfile = async () => {
+  const formData = new FormData();
+  formData.append("username", profileForm.username);
+  formData.append("phone", profileForm.phone);
+  formData.append("age", profileForm.age);
+  formData.append("gender", profileForm.gender);
+  if (avatarFile.value) formData.append("avatar", avatarFile.value);
+  await updateProfile(formData);
+  await authStore.refreshProfile();
+  syncProfile();
+  ElMessage.success("资料已更新");
+};
+
+const resetProfile = () => {
+  previewAvatar.value = "";
+  avatarFile.value = null;
+  syncProfile();
+};
+
+const savePassword = async () => {
+  await updatePassword(securityForm);
+  securityForm.password = "";
+  securityForm.confirmPassword = "";
+  ElMessage.success("密码修改成功");
+};
+
+onMounted(async () => {
+  await authStore.refreshProfile();
+  syncProfile();
+});
 </script>
 
 <style scoped>
-/* 页面容器 */
-.user-info-container {
-  padding: 30px;
-  background-color: #fff; /* 右侧内容区白色背景，或者透明由父级控制 */
-  min-height: 100%;
-}
-
+.user-info-container { padding: 30px; background-color: #fff; min-height: 100%; }
 .mt-20 { margin-top: 20px; }
-
-/* 通用卡片样式 */
-.info-card {
-  background: #fff;
-  border-radius: 12px;
-  /* 如果你的父布局已经有阴影，这里可以去掉 box-shadow */
-  padding: 10px; 
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 25px;
-  padding-bottom: 10px;
-  /* border-bottom: 1px solid #f0f0f0;  根据图示好像没有底线，如果有可以加上 */
-}
-
-/* === 顶部：个人信息 === */
-.profile-content {
-  display: flex;
-  gap: 40px;
-  align-items: flex-start;
-  padding: 0 10px;
-}
-
-/* 头像区域 */
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-.avatar-wrapper {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  cursor: pointer;
-  background-color: #f0f0f0;
-}
-/* 那个上传图标的遮罩层 */
-.upload-icon-overlay {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  font-size: 24px;
-}
-.avatar-label {
-  font-size: 14px;
-  color: #333;
-  font-weight: bold;
-  margin-right: auto; /* 靠左对齐 */
-  margin-left: 5px;
-}
-
-/* 表单样式 */
-.profile-form {
-  flex: 1;
-}
-/* 调整 Label 样式 */
-:deep(.el-form-item__label) {
-  color: #333;
-  font-weight: 500;
-  line-height: 40px; /* 垂直居中 */
-}
-
-.gender-text {
-  line-height: 40px;
-  font-weight: bold;
-  color: #333;
-}
-
-/* 按钮组 */
-.profile-actions {
-  display: flex;
-  gap: 20px;
-  margin-top: 10px;
-}
-.save-btn {
-  background-color: #5362bc; /* 主题紫 */
-  border-color: #5362bc;
-  padding: 10px 30px;
-  font-weight: bold;
-  border-radius: 6px;
-}
-.cancel-btn {
-  background-color: #e6e6e6;
-  border-color: #e6e6e6;
-  color: #666;
-  padding: 10px 30px;
-  font-weight: bold;
-  border-radius: 6px;
-}
-
-/* === 底部：修改密码 === */
-.security-section {
-  padding: 0 10px;
-}
-.sec-subtitle {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-/* 确认修改按钮 */
-.password-actions {
-  margin-top: 30px;
-}
-.confirm-btn {
-  width: 100%;
-  height: 44px;
-  background-color: #5362bc;
-  border-color: #5362bc;
-  font-weight: bold;
-  font-size: 15px;
-  border-radius: 6px;
-}
-
-/* ========================================= */
-/* 🔥 核心样式定制：灰底无边框输入框 🔥 */
-/* ========================================= */
-:deep(.custom-gray-input .el-input__wrapper) {
-  background-color: #e4e4e4; /* 图中的浅灰色 */
-  box-shadow: none !important; /* 去掉边框 */
-  border-radius: 6px;
-  padding: 0 15px;
-  height: 40px;
-}
-
-:deep(.custom-gray-input .el-input__inner) {
-  color: #333;
-  font-weight: 500;
-}
-
-/* focus 时的样式 (可选：轻微加深背景或加边框) */
-:deep(.custom-gray-input .el-input__wrapper.is-focus) {
-  background-color: #dedede;
-  box-shadow: none !important;
-}
+.info-card { background: #fff; border-radius: 12px; padding: 10px; }
+.card-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 25px; padding-bottom: 10px; }
+.profile-content { display: flex; gap: 40px; align-items: flex-start; padding: 0 10px; }
+.avatar-section { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.avatar-wrapper { position: relative; width: 80px; height: 80px; border-radius: 50%; overflow: hidden; cursor: pointer; background-color: #f0f0f0; }
+.hidden-input { display: none; }
+.upload-icon-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; }
+.avatar-label { font-size: 14px; color: #333; font-weight: bold; }
+.profile-form { flex: 1; }
+:deep(.el-form-item__label) { color: #333; font-weight: 500; line-height: 40px; }
+.profile-actions { display: flex; gap: 20px; margin-top: 10px; }
+.save-btn { background-color: #5362bc; border-color: #5362bc; padding: 10px 30px; font-weight: bold; border-radius: 6px; }
+.cancel-btn { background-color: #e6e6e6; border-color: #e6e6e6; color: #666; padding: 10px 30px; font-weight: bold; border-radius: 6px; }
+.security-section { padding: 0 10px; }
+.sec-subtitle { font-size: 14px; color: #333; margin-bottom: 20px; font-weight: 500; }
+.password-actions { margin-top: 30px; }
+.confirm-btn { width: 100%; height: 44px; background-color: #5362bc; border-color: #5362bc; font-weight: bold; font-size: 15px; border-radius: 6px; }
+:deep(.custom-gray-input .el-input__wrapper), :deep(.custom-gray-input .el-select__wrapper) { background-color: #e4e4e4; box-shadow: none !important; border-radius: 6px; padding: 0 15px; min-height: 40px; }
 </style>
