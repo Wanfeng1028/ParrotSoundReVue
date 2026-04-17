@@ -27,6 +27,19 @@
         </div>
       </div>
     </div>
+
+    <el-empty v-if="!filteredWorks.length" description="当前筛选下暂无作品" />
+
+    <div class="pagination-row">
+      <el-pagination
+        background
+        layout="prev, pager, next"
+        :current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        @current-change="handlePageChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -46,16 +59,20 @@ interface HistoryItem {
 const activeTab = ref("audio");
 const searchText = ref("");
 const worksList = ref<HistoryItem[]>([]);
+const page = ref(1);
+const pageSize = ref(12);
+const total = ref(0);
 
 const load = async () => {
-  const response = await fetchHistory(activeTab.value as "audio" | "video" | "voice");
-  worksList.value = response.data.map((item) => ({
+  const response = await fetchHistory(activeTab.value as "audio" | "video" | "voice", page.value, pageSize.value);
+  worksList.value = response.data.items.map((item) => ({
     id: item.id,
     title: item.title,
     date: item.date,
     audioUrl: item.audioUrl,
     type: item.type,
   }));
+  total.value = response.data.total;
 };
 
 const filteredWorks = computed(() =>
@@ -65,6 +82,11 @@ const filteredWorks = computed(() =>
 const play = (audioUrl: string) => {
   const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}${audioUrl}`);
   audio.play().catch(() => undefined);
+};
+
+const handlePageChange = (nextPage: number) => {
+  page.value = nextPage;
+  load();
 };
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
@@ -84,7 +106,7 @@ onMounted(() => {
 .gray-search { width: 240px; }
 :deep(.gray-search .el-input__wrapper) { background-color: #f5f5f5; border-radius: 6px; box-shadow: none; }
 .tool-btn { background: #f5f5f5; border: none; color: #666; font-weight: bold; padding: 10px 15px; }
-.works-grid { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+.works-grid { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; min-height: 240px; }
 .work-card { width: 180px; }
 .cover-wrapper { width: 180px; height: 180px; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; background: linear-gradient(160deg, #dbe1ff, #aab7ff); }
 .cover-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: #4250af; }
@@ -92,4 +114,5 @@ onMounted(() => {
 .work-info { margin-top: 10px; }
 .w-title { font-weight: bold; font-size: 14px; color: #333; }
 .w-date { font-size: 12px; color: #999; margin-top: 4px; }
+.pagination-row { margin-top: 24px; display: flex; justify-content: flex-end; }
 </style>

@@ -234,22 +234,53 @@ const seedState = () => {
 ensureDir(env.dataDir);
 ensureDir(env.uploadDir);
 
+let cachedState = null;
+let flushTimer = null;
+let flushPromise = null;
+
 const writeState = (state) => {
   fs.writeFileSync(dataFile, JSON.stringify(state, null, 2), "utf-8");
   return state;
 };
 
 const loadState = () => {
-  if (!fs.existsSync(dataFile)) {
-    return writeState(seedState());
+  if (cachedState) {
+    return cachedState;
   }
-  return JSON.parse(fs.readFileSync(dataFile, "utf-8"));
+  if (!fs.existsSync(dataFile)) {
+    cachedState = writeState(seedState());
+    return cachedState;
+  }
+  cachedState = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
+  return cachedState;
+};
+
+const flushState = () => {
+  if (!cachedState) return Promise.resolve();
+  flushPromise = Promise.resolve().then(() => {
+    writeState(cachedState);
+  });
+  return flushPromise.finally(() => {
+    flushPromise = null;
+  });
+};
+
+const scheduleFlush = () => {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+  }
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    flushState();
+  }, 50);
 };
 
 const saveState = (updater) => {
   const current = loadState();
   const next = updater(current);
-  return writeState(next);
+  cachedState = next;
+  scheduleFlush();
+  return cachedState;
 };
 
-module.exports = { loadState, saveState, ensureDir };
+module.exports = { loadState, saveState, ensureDir, flushState };

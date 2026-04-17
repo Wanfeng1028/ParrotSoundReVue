@@ -1,18 +1,21 @@
 import { apiRequest } from "../utils/request";
-import type { VoiceModel } from "../types";
+import type { PaginatedResponse, VoiceModel } from "../types";
 
 export const fetchCommunityVoices = (params: {
   sort: string;
   language: string;
   search: string;
+  page?: number;
+  pageSize?: number;
 }) =>
   apiRequest<
-    Array<
+    PaginatedResponse<
       VoiceModel & {
         username: string;
         userAvatar: string;
         date: string;
         desc: string;
+        avatar: string;
       }
     >
   >({
@@ -21,12 +24,13 @@ export const fetchCommunityVoices = (params: {
     params,
   });
 
-export const fetchCommunityRankings = () =>
+export const fetchCommunityRankings = (params?: { page?: number; pageSize?: number }) =>
   apiRequest<
-    Array<{ id: number; name: string; username: string; likes: number; userAvatar: string; avatar: string }>
+    PaginatedResponse<{ id: number; name: string; username: string; likes: number; userAvatar: string; avatar: string }>
   >({
     url: "/api/community/rankings",
     method: "GET",
+    params,
   });
 
 export const likeCommunityVoice = (voiceId: number) =>

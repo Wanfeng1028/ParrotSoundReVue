@@ -1,5 +1,5 @@
 import { apiRequest } from "../utils/request";
-import type { AuthUser, InteractionItem, NotificationItem } from "../types";
+import type { AuthUser, InteractionItem, NotificationItem, PaginatedResponse } from "../types";
 
 export const updateProfile = (formData: FormData) =>
   apiRequest<AuthUser>({
@@ -22,23 +22,25 @@ export const updatePassword = (data: {
     data,
   });
 
-export const fetchHistory = (type: "all" | "audio" | "video" | "voice") =>
-  apiRequest<Array<{ id: string; itemId: number; type: string; title: string; date: string; cover: string; status: string; audioUrl: string }>>({
+export const fetchHistory = (type: "all" | "audio" | "video" | "voice", page = 1, pageSize = 12) =>
+  apiRequest<
+    PaginatedResponse<{ id: string; itemId: number; type: string; title: string; date: string; cover: string; status: string; audioUrl: string }>
+  >({
     url: "/api/users/history",
     method: "GET",
-    params: { type },
+    params: { type, page, pageSize },
   });
 
-export const fetchInteractions = (type: string) =>
-  apiRequest<InteractionItem[]>({
+export const fetchInteractions = (type: string, page = 1, pageSize = 12) =>
+  apiRequest<PaginatedResponse<InteractionItem>>({
     url: "/api/users/interactions",
     method: "GET",
-    params: { type },
+    params: { type, page, pageSize },
   });
 
-export const fetchNotifications = (type: string) =>
-  apiRequest<NotificationItem[]>({
+export const fetchNotifications = (type: string, page = 1, pageSize = 12) =>
+  apiRequest<PaginatedResponse<NotificationItem>>({
     url: "/api/users/notifications",
     method: "GET",
-    params: { type },
+    params: { type, page, pageSize },
   });

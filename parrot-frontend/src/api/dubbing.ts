@@ -1,5 +1,5 @@
 import { apiRequest } from "../utils/request";
-import type { AiModelOption, DubbingJob } from "../types";
+import type { AiModelOption, DubbingJob, PaginatedResponse } from "../types";
 
 export const fetchDubbingOptions = () =>
   apiRequest<{
@@ -13,7 +13,7 @@ export const fetchDubbingOptions = () =>
   });
 
 export const generateDubbingDraft = (data: { prompt: string; model?: string }) =>
-  apiRequest<{ content: string }>({
+  apiRequest<{ taskId: string; status: string }>({
     url: "/api/dubbing/ai-generate",
     method: "POST",
     data,
@@ -25,7 +25,7 @@ export const previewDubbing = (data: {
   voiceId: number;
   settings: Record<string, unknown>;
 }) =>
-  apiRequest<DubbingJob>({
+  apiRequest<{ taskId: string; status: string }>({
     url: "/api/dubbing/preview",
     method: "POST",
     data,
@@ -37,17 +37,17 @@ export const exportDubbing = (data: {
   voiceId: number;
   settings: Record<string, unknown>;
 }) =>
-  apiRequest<DubbingJob>({
+  apiRequest<{ taskId: string; status: string }>({
     url: "/api/dubbing/export",
     method: "POST",
     data,
   });
 
-export const fetchAudioRecords = (search = "") =>
-  apiRequest<DubbingJob[]>({
+export const fetchAudioRecords = (search = "", page = 1, pageSize = 12) =>
+  apiRequest<PaginatedResponse<DubbingJob>>({
     url: "/api/dubbing/records",
     method: "GET",
-    params: { search },
+    params: { search, page, pageSize },
   });
 
 export const deleteAudioRecord = (id: number) =>

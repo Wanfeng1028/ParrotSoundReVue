@@ -3,11 +3,15 @@
   <section class="section-box">
     <!-- 背景图 -->
     <div class="home-banner">
-      <img
-        class="home-banner__img"
-        src="../assets/images/banner-computer.jpg"
-        alt="首页背景图"
-      />
+      <picture>
+        <source :srcset="bannerImageWebp" type="image/webp" />
+        <img
+          class="home-banner__img"
+          :src="bannerImageJpg"
+          alt="首页背景图"
+          fetchpriority="high"
+        />
+      </picture>
     </div>
     <!-- 文字内容 -->
     <div class="home-banner__content">
@@ -27,11 +31,15 @@
   <!-- 第二屏幕 -->
   <section class="section-box">
     <div class="bg-wrapper">
-      <img
-        class="home-banner__img"
-        src="../assets/images/tech-banner.png"
-        alt="技术背景图"
-      />
+      <picture>
+        <source :srcset="techBannerWebp" type="image/webp" />
+        <img
+          class="home-banner__img"
+          :src="techBannerPng"
+          alt="技术背景图"
+          loading="lazy"
+        />
+      </picture>
     </div>
 
     <div class="section-two__content">
@@ -47,12 +55,15 @@
     </div>
 
     <div class="cards-container">
-      <el-row gutter="40">
+      <el-row :gutter="40">
         <!-- 现场录音功能 -->
         <el-col :span="12" class="grid-col">
           <div class="tech-item">
             <div class="img-box">
-              <img src="../assets/images/tech-1.png" alt="现场录音功能" />
+              <picture>
+                <source :srcset="techCardOne.webp" type="image/webp" />
+                <img :src="techCardOne.png" alt="现场录音功能" loading="lazy" />
+              </picture>
             </div>
             <div class="tech-item__footer">现场录音功能</div>
           </div>
@@ -61,18 +72,24 @@
         <el-col :span="12" class="grid-col">
           <div class="tech-item">
             <div class="img-box">
-              <img src="../assets/images/tech-2.png" alt="标准音频预设" />
+              <picture>
+                <source :srcset="techCardTwo.webp" type="image/webp" />
+                <img :src="techCardTwo.png" alt="标准音频预设" loading="lazy" />
+              </picture>
             </div>
             <div class="tech-item__footer">标准音频预设</div>
           </div>
         </el-col>
       </el-row>
       <!-- 定制化语音讲解 -->
-      <el-row gutter="40">
+      <el-row :gutter="40">
         <el-col :span="12" class="grid-col">
           <div class="tech-item">
             <div class="img-box">
-              <img src="../assets/images/tech-3.png" alt="定制化语音讲解" />
+              <picture>
+                <source :srcset="techCardThree.webp" type="image/webp" />
+                <img :src="techCardThree.png" alt="定制化语音讲解" loading="lazy" />
+              </picture>
             </div>
             <div class="tech-item__footer">定制化语音讲解</div>
           </div>
@@ -81,7 +98,10 @@
         <el-col :span="12" class="grid-col">
           <div class="tech-item">
             <div class="img-box">
-              <img src="../assets/images/tech-4.png" alt="音频文件上传" />
+              <picture>
+                <source :srcset="techCardFour.webp" type="image/webp" />
+                <img :src="techCardFour.png" alt="音频文件上传" loading="lazy" />
+              </picture>
             </div>
             <div class="tech-item__footer">音频文件上传</div>
           </div>
@@ -109,7 +129,10 @@
             <div class="card-header">{{ item.title }}</div>
 
             <div class="card-img-box">
-              <img :src="item.img" :alt="item.title" />
+              <picture>
+                <source :srcset="item.webp" type="image/webp" />
+                <img :src="item.img" :alt="item.title" loading="lazy" />
+              </picture>
             </div>
 
             <div class="card-desc">
@@ -182,6 +205,26 @@ import { useAuthStore } from "../stores/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const bannerImageWebp = new URL("../assets/images/banner-computer.webp", import.meta.url).href;
+const bannerImageJpg = new URL("../assets/images/banner-computer.jpg", import.meta.url).href;
+const techBannerWebp = new URL("../assets/images/tech-banner.webp", import.meta.url).href;
+const techBannerPng = new URL("../assets/images/tech-banner.png", import.meta.url).href;
+const techCardOne = {
+  webp: new URL("../assets/images/tech-1.webp", import.meta.url).href,
+  png: new URL("../assets/images/tech-1.png", import.meta.url).href,
+};
+const techCardTwo = {
+  webp: new URL("../assets/images/tech-2.webp", import.meta.url).href,
+  png: new URL("../assets/images/tech-2.png", import.meta.url).href,
+};
+const techCardThree = {
+  webp: new URL("../assets/images/tech-3.webp", import.meta.url).href,
+  png: new URL("../assets/images/tech-3.png", import.meta.url).href,
+};
+const techCardFour = {
+  webp: new URL("../assets/images/tech-4.webp", import.meta.url).href,
+  png: new URL("../assets/images/tech-4.png", import.meta.url).href,
+};
 
 const { text } = useTypeWriter("鹦音坊--AI语音平台", 100, 500);
 const { text: title } = useTypeWriter("强大的核心技术", 150, 1000); // 稍微晚一点开始
@@ -200,26 +243,31 @@ const carouselItems = [
   {
     title: "声音置换与字幕",
     img: new URL("../assets/images/course-1.png", import.meta.url).href, // 示例图片路径写法
+    webp: new URL("../assets/images/course-1.webp", import.meta.url).href,
     desc: "自动识别语音内容并生成字幕，支持多语种声音一键置换，保留原视频背景音。",
   },
   {
     title: "3D数字人",
     img: new URL("../assets/images/course-2.png", import.meta.url).href,
+    webp: new URL("../assets/images/course-2.webp", import.meta.url).href,
     desc: "高精度3D虚拟数字人形象，支持表情驱动与动作捕捉，打造沉浸式教学体验。",
   },
   {
     title: "语音合成",
     img: new URL("../assets/images/course-3.png", import.meta.url).href,
+    webp: new URL("../assets/images/course-3.webp", import.meta.url).href,
     desc: "依托语音生成、数字人讲解及多模态内容生成，全面支持教师与学生的互动式学习需求，满足基础配音功能。",
   },
   {
     title: "声音克隆",
     img: new URL("../assets/images/course-4.png", import.meta.url).href,
+    webp: new URL("../assets/images/course-4.webp", import.meta.url).href,
     desc: "只需少量音频数据即可快速克隆目标声音，还原度高，适用于个性化配音场景。",
   },
   {
     title: "有声课件",
     img: new URL("../assets/images/course-5.png", import.meta.url).href,
+    webp: new URL("../assets/images/course-5.webp", import.meta.url).href,
     desc: "将传统PPT快速转化为带有智能配音的有声视频课件，提升教学资源制作效率。",
   },
 ];

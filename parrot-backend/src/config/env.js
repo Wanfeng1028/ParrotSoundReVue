@@ -24,6 +24,9 @@ const env = {
   jwtSecret: process.env.JWT_SECRET || "parrot-sound-revue-dev-secret",
   dataDir: path.resolve(cwd, process.env.DATA_DIR || "./data"),
   uploadDir: path.resolve(cwd, process.env.UPLOAD_DIR || "./uploads"),
+  requestLogSlowMs: Number(process.env.REQUEST_LOG_SLOW_MS || 500),
+  cacheTtlSeconds: Number(process.env.CACHE_TTL_SECONDS || 60),
+  queueConcurrency: Number(process.env.QUEUE_CONCURRENCY || 2),
   smtp: {
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),

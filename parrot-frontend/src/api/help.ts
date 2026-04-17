@@ -1,11 +1,17 @@
 import { apiRequest } from "../utils/request";
-import type { TutorialItem } from "../types";
+import type { PaginatedResponse, TutorialDetail, TutorialListItem } from "../types";
 
-export const fetchTutorials = (category: string) =>
-  apiRequest<TutorialItem[]>({
+export const fetchTutorials = (category: string, page = 1, pageSize = 12) =>
+  apiRequest<PaginatedResponse<TutorialListItem>>({
     url: "/api/help/tutorials",
     method: "GET",
-    params: { category },
+    params: { category, page, pageSize },
+  });
+
+export const fetchTutorialDetail = (id: number) =>
+  apiRequest<TutorialDetail>({
+    url: `/api/help/tutorials/${id}`,
+    method: "GET",
   });
 
 export const submitFeedback = (data: { usageTime: string; content: string }) =>

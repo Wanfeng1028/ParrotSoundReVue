@@ -1,7 +1,8 @@
 import { computed, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { fetchDubbingOptions } from "../api/dubbing";
-import { fetchTeachingProjects, generateTeachingScript, saveTeachingProject } from "../api/teaching";
+import { fetchTeachingProjects, generateTeachingScript, generateTeachingVideoTask, saveTeachingProject } from "../api/teaching";
+import { waitForTask } from "../api/tasks";
 import type { AiModelOption, TeachingProject, TeachingSlide } from "../types";
 
 type ResourceTab = "avatar" | "voice" | "background";
@@ -61,6 +62,10 @@ export function useEducationLogic() {
   const selectedBackgroundId = ref("bg-gradient");
   const selectedVoiceId = ref<number | null>(null);
   const voiceResources = ref<TeachingResource[]>([]);
+  const page = ref(1);
+  const pageSize = ref(6);
+  const total = ref(0);
+  let searchTimer: number | null = null;
 
   const activeSlide = computed(() => slides.value[activeSlideIndex.value] || slides.value[0]);
 
@@ -201,11 +206,12 @@ export function useEducationLogic() {
     loading.value = true;
     try {
       const [projectsResponse, dubbingResponse] = await Promise.all([
-        fetchTeachingProjects(),
+        fetchTeachingProjects(page.value, pageSize.value),
         fetchDubbingOptions(),
       ]);
 
-      projects.value = projectsResponse.data.projects;
+      projects.value = projectsResponse.data.items.items;
+      total.value = projectsResponse.data.items.total;
       aiModels.value = projectsResponse.data.models;
       selectedModel.value =
         projectsResponse.data.models.find((item) => item.isDefault)?.id ||
@@ -224,8 +230,8 @@ export function useEducationLogic() {
         selectedVoiceId.value = dubbingResponse.data.voices[0]?.id || null;
       }
 
-      if (projectsResponse.data.projects[0]) {
-        applyProject(projectsResponse.data.projects[0]);
+      if (projects.value[0] && !currentProjectId.value) {
+        applyProject(projects.value[0]);
       } else {
         syncEditorFromSlide();
       }
@@ -303,20 +309,39 @@ export function useEducationLogic() {
     ElMessage.success(`已保存当前页：${slide.title}`);
   };
 
-  const handleSave = async (status = "draft") => {
+  const handleSave = async () => {
     handleSaveCurrentSlide();
     loading.value = true;
     try {
-      const response = await saveTeachingProject(buildProjectPayload(status));
+      const response = await saveTeachingProject(buildProjectPayload("draft"));
       currentProjectId.value = response.data.id;
       await loadProjects();
-      ElMessage.success(status === "completed" ? "教学任务已生成" : "教学项目已保存");
+      ElMessage.success("教学项目已保存");
     } finally {
       loading.value = false;
     }
   };
 
-  const handleGenerate = async () => handleSave("completed");
+  const handleGenerate = async () => {
+    handleSaveCurrentSlide();
+    loading.value = true;
+    try {
+      await saveTeachingProject(buildProjectPayload("completed"));
+      const taskResponse = await generateTeachingVideoTask({
+        title: projectTitle.value.trim() || "未命名教学项目",
+        script: textContent.value,
+        voiceId: selectedVoiceId.value,
+        ratio: settings.ratio,
+        resolution: settings.resolution,
+        bitrate: settings.bitrate,
+      });
+      await waitForTask(taskResponse.data.taskId);
+      await loadProjects();
+      ElMessage.success("教学视频任务已完成并进入历史记录");
+    } finally {
+      loading.value = false;
+    }
+  };
 
   const generateByAi = async () => {
     if (!aiPrompt.value.trim()) {
@@ -330,12 +355,28 @@ export function useEducationLogic() {
         prompt: `${aiPrompt.value}\n课件模式：${teachingMode.value === "course" ? "AI 课件" : "讲解视频"}\n当前标题：${projectTitle.value}`,
         model: selectedModel.value,
       });
-      textContent.value = response.data.content;
+      const task = await waitForTask<{ content: string }>(response.data.taskId);
+      textContent.value = task.result?.content || "";
       handleSaveCurrentSlide();
       ElMessage.success("AI 讲解稿已生成");
     } finally {
       loading.value = false;
     }
+  };
+
+  const debouncedSearchProjects = () => {
+    if (searchTimer) {
+      window.clearTimeout(searchTimer);
+    }
+    searchTimer = window.setTimeout(() => {
+      page.value = 1;
+      loadProjects();
+    }, 300);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    page.value = nextPage;
+    loadProjects();
   };
 
   return {
@@ -363,6 +404,9 @@ export function useEducationLogic() {
     selectedAvatarName,
     selectedBackgroundName,
     selectedVoiceName,
+    page,
+    pageSize,
+    total,
     loadProjects,
     handleSave,
     handleGenerate,
@@ -375,5 +419,7 @@ export function useEducationLogic() {
     selectResourceTab,
     selectResource,
     applyProject,
+    debouncedSearchProjects,
+    handlePageChange,
   };
 }

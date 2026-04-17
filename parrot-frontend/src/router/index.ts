@@ -1,21 +1,4 @@
 import { createRouter, createWebHistory } from "vue-router";
-import PublicLayout from "../layouts/PublicLayout.vue";
-import UserLayout from "../components/UserLayout.vue";
-import HomeView from "../views/HomeView.vue";
-import DubbingView from "../views/DubbingView.vue";
-import CloneView from "../views/CloneView.vue";
-import HistoryView from "../views/HistoryView.vue";
-import TechingView from "../views/TechingView.vue";
-import CommunityView from "../views/CommunityView.vue";
-import HelpView from "../views/HelpView.vue";
-import LoginView from "../views/LoginView.vue";
-import RegisterView from "../views/RegisterView.vue";
-import RePasswordView from "../views/RePasswordView.vue";
-import UserInfoView from "../views/User/UserInfo.vue";
-import HistoryWorksView from "../views/User/HistoryWorks.vue";
-import InteractionView from "../views/User/InteractionView.vue";
-import NotificationView from "../views/User/NotificationView.vue";
-import AudioRecordView from "../views/AudioRecordView.vue";
 import { useAuthStore } from "../stores/auth";
 
 const router = createRouter({
@@ -24,29 +7,29 @@ const router = createRouter({
     { path: "/", redirect: "/home" },
     {
       path: "/",
-      component: PublicLayout,
+      component: () => import("../layouts/PublicLayout.vue"),
       children: [
-        { path: "home", name: "home", component: HomeView },
-        { path: "dubbing", name: "dubbing", component: DubbingView, meta: { requiresAuth: true } },
-        { path: "clone", name: "clone", component: CloneView, meta: { requiresAuth: true } },
-        { path: "history", name: "history", component: HistoryView, meta: { requiresAuth: true } },
-        { path: "teching", name: "teching", component: TechingView, meta: { requiresAuth: true } },
-        { path: "community", name: "community", component: CommunityView, meta: { requiresAuth: true } },
-        { path: "audio-record", name: "audio-record", component: AudioRecordView, meta: { requiresAuth: true } },
-        { path: "help", name: "help", component: HelpView, meta: { requiresAuth: true } },
-        { path: "login", name: "login", component: LoginView },
-        { path: "register", name: "register", component: RegisterView },
-        { path: "re-password", name: "re-password", component: RePasswordView },
+        { path: "home", name: "home", component: () => import("../views/HomeView.vue") },
+        { path: "dubbing", name: "dubbing", component: () => import("../views/DubbingView.vue"), meta: { requiresAuth: true } },
+        { path: "clone", name: "clone", component: () => import("../views/CloneView.vue"), meta: { requiresAuth: true } },
+        { path: "history", name: "history", component: () => import("../views/HistoryView.vue"), meta: { requiresAuth: true } },
+        { path: "teching", name: "teching", component: () => import("../views/TechingView.vue"), meta: { requiresAuth: true } },
+        { path: "community", name: "community", component: () => import("../views/CommunityView.vue"), meta: { requiresAuth: true } },
+        { path: "audio-record", name: "audio-record", component: () => import("../views/AudioRecordView.vue"), meta: { requiresAuth: true } },
+        { path: "help", name: "help", component: () => import("../views/HelpView.vue"), meta: { requiresAuth: true } },
+        { path: "login", name: "login", component: () => import("../views/LoginView.vue") },
+        { path: "register", name: "register", component: () => import("../views/RegisterView.vue") },
+        { path: "re-password", name: "re-password", component: () => import("../views/RePasswordView.vue") },
         {
           path: "user",
-          component: UserLayout,
+          component: () => import("../components/UserLayout.vue"),
           meta: { requiresAuth: true },
           children: [
             { path: "", redirect: "/user/profile" },
-            { path: "profile", name: "user-profile", component: UserInfoView },
-            { path: "history", name: "history-works", component: HistoryWorksView },
-            { path: "interaction", name: "interaction", component: InteractionView },
-            { path: "notification", name: "notification", component: NotificationView },
+            { path: "profile", name: "user-profile", component: () => import("../views/User/UserInfo.vue") },
+            { path: "history", name: "history-works", component: () => import("../views/User/HistoryWorks.vue") },
+            { path: "interaction", name: "interaction", component: () => import("../views/User/InteractionView.vue") },
+            { path: "notification", name: "notification", component: () => import("../views/User/NotificationView.vue") },
           ],
         },
       ],
@@ -54,9 +37,8 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach((to) => {
   const authStore = useAuthStore();
-  await authStore.initialize();
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return { path: "/login", query: { redirect: to.fullPath } };
   }

@@ -11,6 +11,14 @@ import {
 } from "../api/community";
 import type { VoiceModel } from "../types";
 
+type CommunityVoice = VoiceModel & {
+  username: string;
+  userAvatar: string;
+  date: string;
+  desc: string;
+  avatar: string;
+};
+
 export function useCommunityLogic() {
   const router = useRouter();
   const filters = reactive({
@@ -18,27 +26,42 @@ export function useCommunityLogic() {
     language: "all",
     search: "",
   });
-  const voiceList = ref<Array<VoiceModel & { username: string; userAvatar: string; date: string; desc: string }>>([]);
+  const voiceList = ref<CommunityVoice[]>([]);
   const rankList = ref<Array<{ id: number; name: string; username: string; likes: number; userAvatar: string; avatar: string }>>([]);
   const loading = ref(false);
   const playingId = ref<number | null>(null);
+  const page = ref(1);
+  const pageSize = ref(6);
+  const total = ref(0);
   let currentAudio: HTMLAudioElement | null = null;
+  let searchTimer: number | null = null;
 
   const load = async () => {
     loading.value = true;
     try {
       const [voicesResponse, rankingsResponse] = await Promise.all([
-        fetchCommunityVoices(filters),
-        fetchCommunityRankings(),
+        fetchCommunityVoices({ ...filters, page: page.value, pageSize: pageSize.value }),
+        fetchCommunityRankings({ page: 1, pageSize: 5 }),
       ]);
-      voiceList.value = voicesResponse.data;
-      rankList.value = rankingsResponse.data;
+      voiceList.value = voicesResponse.data.items;
+      total.value = voicesResponse.data.total;
+      rankList.value = rankingsResponse.data.items;
     } finally {
       loading.value = false;
     }
   };
 
-  const updateVoice = (voiceId: number, updater: (voice: typeof voiceList.value[number]) => void) => {
+  const debouncedLoad = () => {
+    if (searchTimer) {
+      window.clearTimeout(searchTimer);
+    }
+    searchTimer = window.setTimeout(() => {
+      page.value = 1;
+      load();
+    }, 300);
+  };
+
+  const updateVoice = (voiceId: number, updater: (voice: CommunityVoice) => void) => {
     const target = voiceList.value.find((item) => item.id === voiceId);
     if (target) updater(target);
   };
@@ -107,17 +130,27 @@ export function useCommunityLogic() {
     useVoice(voiceId);
   };
 
+  const handlePageChange = (nextPage: number) => {
+    page.value = nextPage;
+    load();
+  };
+
   return {
     filters,
     voiceList,
     rankList,
     loading,
     playingId,
+    page,
+    pageSize,
+    total,
     load,
+    debouncedLoad,
     previewVoice,
     likeVoice,
     favoriteVoice,
     useVoice,
     useRankVoice,
+    handlePageChange,
   };
 }

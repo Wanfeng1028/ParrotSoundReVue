@@ -24,6 +24,10 @@ class MemoryCache {
   async del(key) {
     this.map.delete(key);
   }
+
+  async keys(prefix = "") {
+    return Array.from(this.map.keys()).filter((key) => key.startsWith(prefix));
+  }
 }
 
 let cache = new MemoryCache();
@@ -47,4 +51,59 @@ const initCache = async () => {
 const getCache = () => cache;
 const getCacheMode = () => cacheMode;
 
-module.exports = { initCache, getCache, getCacheMode };
+const serialize = (value) => JSON.stringify(value);
+
+const deserialize = (value) => {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return null;
+  }
+};
+
+const cacheGetJson = async (key) => deserialize(await cache.get(key));
+
+const cacheSetJson = async (key, value, ttlSeconds) => {
+  await cache.set(key, serialize(value), ttlSeconds ? { EX: ttlSeconds } : undefined);
+};
+
+const cacheDel = async (key) => {
+  await cache.del(key);
+};
+
+const cacheDelByPrefix = async (prefix) => {
+  if (cacheMode === "redis" && typeof cache.scanIterator === "function") {
+    for await (const key of cache.scanIterator({ MATCH: `${prefix}*`, COUNT: 100 })) {
+      await cache.del(key);
+    }
+    return;
+  }
+
+  if (typeof cache.keys === "function") {
+    const keys = await cache.keys(prefix);
+    await Promise.all(keys.map((key) => cache.del(key)));
+  }
+};
+
+const remember = async (key, ttlSeconds, loader) => {
+  const cached = await cacheGetJson(key);
+  if (cached !== null) {
+    return { value: cached, hit: true };
+  }
+
+  const value = await loader();
+  await cacheSetJson(key, value, ttlSeconds);
+  return { value, hit: false };
+};
+
+module.exports = {
+  initCache,
+  getCache,
+  getCacheMode,
+  cacheGetJson,
+  cacheSetJson,
+  cacheDel,
+  cacheDelByPrefix,
+  remember,
+};

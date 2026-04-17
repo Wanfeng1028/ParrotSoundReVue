@@ -4,11 +4,12 @@ const { ok, fail } = require("../utils/api");
 const { createToken, authRequired } = require("../middleware/auth");
 const repository = require("../services/repository");
 const { getCache } = require("../services/cache");
+const { authLimiter, codeLimiter } = require("../middleware/rate-limit");
 const { addMinutes } = require("../utils/time");
 
 const router = express.Router();
 
-router.post("/send-code", async (req, res, next) => {
+router.post("/send-code", codeLimiter, async (req, res, next) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
     if (!email) return fail(res, 400, "邮箱不能为空");
@@ -31,7 +32,7 @@ router.post("/send-code", async (req, res, next) => {
   }
 });
 
-router.post("/register", async (req, res, next) => {
+router.post("/register", authLimiter, async (req, res, next) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
     const username = String(req.body.username || "").trim();
@@ -59,7 +60,7 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
-router.post("/login", async (req, res, next) => {
+router.post("/login", authLimiter, async (req, res, next) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
@@ -90,7 +91,7 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", authLimiter, async (req, res, next) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");

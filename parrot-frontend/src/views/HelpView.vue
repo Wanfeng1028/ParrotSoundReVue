@@ -26,7 +26,7 @@
         </div>
 
         <div class="content-area">
-          <div v-if="activeTab !== 'feedback'" class="video-grid">
+          <div v-if="activeTab !== 'feedback'" class="video-grid" v-loading="loading">
             <div class="video-item" v-for="video in videoList" :key="video.id" @click="openTutorial(video)">
               <div class="video-thumb">
                 <el-icon class="play-btn"><CaretRight /></el-icon>
@@ -35,16 +35,17 @@
                 <div class="video-summary">{{ video.summary }}</div>
               </div>
             </div>
+            <el-empty v-if="!videoList.length && !loading" description="当前分类暂无教程" />
           </div>
 
           <div v-else class="feedback-box">
             <div class="form-group">
               <div class="f-label">使用时间</div>
               <el-radio-group v-model="feedbackForm.usageTime" class="custom-radios">
-                <div class="radio-row"><el-radio label="不到 1 个月" size="large" /></div>
-                <div class="radio-row"><el-radio label="1 - 3 个月左右" size="large" /></div>
-                <div class="radio-row"><el-radio label="3 个月以上 6 个月以内" size="large" /></div>
-                <div class="radio-row"><el-radio label="6 个月及以上" size="large" /></div>
+                <div class="radio-row"><el-radio value="不到 1 个月" size="large" /></div>
+                <div class="radio-row"><el-radio value="1 - 3 个月左右" size="large" /></div>
+                <div class="radio-row"><el-radio value="3 个月以上 6 个月以内" size="large" /></div>
+                <div class="radio-row"><el-radio value="6 个月及以上" size="large" /></div>
               </el-radio-group>
             </div>
 
@@ -62,6 +63,17 @@
             <div class="f-footer">
               <el-button type="primary" class="submit-btn" @click="submitFeedback">确认提交</el-button>
             </div>
+          </div>
+
+          <div v-if="activeTab !== 'feedback'" class="pagination-row">
+            <el-pagination
+              background
+              layout="prev, pager, next"
+              :current-page="page"
+              :page-size="pageSize"
+              :total="total"
+              @current-change="handlePageChange"
+            />
           </div>
         </div>
       </div>
@@ -91,8 +103,22 @@ import { computed, onMounted } from "vue";
 import { Compass, Microphone, CopyDocument, Monitor, EditPen, CaretRight } from "@element-plus/icons-vue";
 import { useHelpLogic } from "../composables/useHelpLogic";
 
-const { activeTab, feedbackForm, videoList, tutorialVisible, currentTutorial, switchTab, openTutorial, goToTutorialTarget, submitFeedback } =
-  useHelpLogic();
+const {
+  activeTab,
+  feedbackForm,
+  videoList,
+  tutorialVisible,
+  currentTutorial,
+  loading,
+  page,
+  pageSize,
+  total,
+  switchTab,
+  openTutorial,
+  goToTutorialTarget,
+  submitFeedback,
+  handlePageChange,
+} = useHelpLogic();
 
 const pageTitle = computed(() => {
   const map: Record<string, string> = {
@@ -120,8 +146,8 @@ onMounted(() => {
 .nav-sidebar { width: 160px; display: flex; flex-direction: column; gap: 15px; }
 .nav-pill { padding: 12px 20px; background: #f5f7fa; border-radius: 8px; color: #555; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.3s; font-weight: 500; }
 .nav-pill.active { background-color: #5865f2; color: #fff; box-shadow: 0 4px 10px rgba(88, 101, 242, 0.3); }
-.content-area { flex: 1; }
-.video-grid { display: flex; gap: 20px; flex-wrap: wrap; }
+.content-area { flex: 1; display: flex; flex-direction: column; }
+.video-grid { display: flex; gap: 20px; flex-wrap: wrap; min-height: 260px; }
 .video-item { width: 300px; height: 180px; background: #ccc; border-radius: 8px; position: relative; cursor: pointer; overflow: hidden; }
 .video-thumb { width: 100%; height: 100%; background: linear-gradient(180deg, #d7dcff, #a7b0f6); color: #fff; padding: 20px; box-sizing: border-box; position: relative; }
 .play-btn { font-size: 32px; color: #5865f2; background: #fff; border-radius: 50%; padding: 5px; }
@@ -141,4 +167,5 @@ onMounted(() => {
 .dialog-steps { display: flex; flex-direction: column; gap: 10px; }
 .step-item { display: flex; gap: 10px; align-items: flex-start; }
 .step-index { width: 22px; height: 22px; border-radius: 50%; background: #5865f2; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.pagination-row { margin-top: auto; display: flex; justify-content: flex-end; padding-top: 20px; }
 </style>

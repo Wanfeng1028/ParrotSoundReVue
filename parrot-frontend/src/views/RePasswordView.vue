@@ -1,6 +1,9 @@
 <template>
   <div class="login-container">
-    <img class="login-signup-bg-img" src="../assets/images/login-signup-bg.png" alt="Parrot-Login-Bg" />
+    <picture>
+      <source :srcset="loginBgWebp" type="image/webp" />
+      <img class="login-signup-bg-img" :src="loginBgPng" alt="Parrot-Login-Bg" fetchpriority="high" />
+    </picture>
     <div class="gradient-layer"></div>
 
     <div class="login-box">
@@ -42,6 +45,9 @@ const formData = reactive({
   password: "",
   code: "",
 });
+
+const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta.url).href;
+const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href;
 
 const sendCode = async () => {
   if (!formData.email) {

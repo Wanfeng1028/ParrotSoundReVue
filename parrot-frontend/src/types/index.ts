@@ -20,6 +20,23 @@ export interface AiModelOption {
   isDefault?: boolean;
 }
 
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface TaskStatusResponse<T = unknown> {
+  taskId: string;
+  status: "queued" | "running" | "completed" | "failed";
+  progress: number;
+  result: T | null;
+  error?: string | null;
+  type?: string;
+  updatedAt?: string;
+}
+
 export interface VoiceModel {
   id: number;
   userId: number;
@@ -73,13 +90,16 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-export interface TutorialItem {
+export interface TutorialListItem {
   id: number;
   category: string;
   title: string;
   duration: string;
   cover: string;
   summary: string;
+}
+
+export interface TutorialDetail extends TutorialListItem {
   content?: string;
   steps?: string[];
   targetRoute?: string;

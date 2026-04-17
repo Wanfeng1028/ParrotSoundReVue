@@ -13,6 +13,43 @@ const getSearch = (config: AxiosRequestConfig) => {
   return params;
 };
 
+const paginate = <T>(items: T[], params: Record<string, string>) => {
+  const page = Math.max(Number(params.page || 1), 1);
+  const pageSize = Math.min(Math.max(Number(params.pageSize || 12), 1), 50);
+  const start = (page - 1) * pageSize;
+  return {
+    items: items.slice(start, start + pageSize),
+    total: items.length,
+    page,
+    pageSize,
+  };
+};
+
+type DemoTask = {
+  taskId: string;
+  status: "queued" | "running" | "completed";
+  progress: number;
+  result: unknown;
+  type: string;
+  updatedAt: string;
+};
+
+const tasks = new Map<string, DemoTask>();
+
+const createTask = (type: string, result: unknown) => {
+  const taskId = `demo-task-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const task: DemoTask = {
+    taskId,
+    status: "completed",
+    progress: 100,
+    result,
+    type,
+    updatedAt: new Date().toISOString(),
+  };
+  tasks.set(taskId, task);
+  return { taskId, status: "completed" };
+};
+
 export const canHandleDemoRequest = () => isFrontendDemoMode();
 
 export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> => {
@@ -68,19 +105,19 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
         audioUrl: item.audioUrl,
       }));
     const items = [...jobItems, ...voiceItems].filter((item) => type === "all" || item.type === type);
-    return ok(items as T);
+    return ok(paginate(items, params) as T);
   }
 
   if (path === "/api/users/interactions" && method === "GET") {
     const type = params.type || "all";
     const items = state.interactions.filter((item) => type === "all" || item.type === type);
-    return ok(items as T);
+    return ok(paginate(items, params) as T);
   }
 
   if (path === "/api/users/notifications" && method === "GET") {
     const type = params.type || "all";
     const items = state.notifications.filter((item) => type === "all" || item.type === type);
-    return ok(items as T);
+    return ok(paginate(items, params) as T);
   }
 
   if (path === "/api/voices/library" && method === "GET") {
@@ -165,7 +202,10 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
 
   if (path === "/api/dubbing/ai-generate" && method === "POST") {
     const prompt = String(data.prompt || "默认需求");
-    return ok({ content: `【前端演示模式】\n根据你的需求「${prompt}」，这是一段用于页面校验的 AI 生成配音文稿。它不会请求后端模型，但会完整走前端交互流程。` } as T, "文稿生成成功");
+    const task = createTask("dubbing-draft", {
+      content: `【前端演示模式】\n根据你的需求「${prompt}」，这是一段用于页面校验的 AI 生成配音文稿。它不会请求后端模型，但会完整走前端交互流程。`,
+    });
+    return ok(task as T, "文稿生成任务已创建");
   }
 
   if ((path === "/api/dubbing/preview" || path === "/api/dubbing/export") && method === "POST") {
@@ -192,7 +232,8 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
       createdAt,
     });
     saveDemoState(state);
-    return ok(job as T, path.endsWith("export") ? "音频导出完成" : "试听任务已生成");
+    const task = createTask(path.endsWith("export") ? "dubbing-export" : "dubbing-preview", job);
+    return ok(task as T, path.endsWith("export") ? "音频导出任务已创建" : "试听任务已创建");
   }
 
   if (path === "/api/dubbing/records" && method === "GET") {
@@ -200,7 +241,7 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
     const items = state.jobs
       .filter((item) => item.type === "audio")
       .filter((item) => !search || `${item.title}${item.text}`.toLowerCase().includes(search));
-    return ok(items as T);
+    return ok(paginate(items, params) as T);
   }
 
   if (/^\/api\/dubbing\/records\/\d+$/.test(path) && method === "DELETE") {
@@ -224,17 +265,17 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
         userAvatar: item.authorAvatar || "",
         date: item.createdAt,
         desc: item.description,
+        avatar: item.coverUrl,
       }));
     if (sort === "newest") items = items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     if (sort === "hot") items = items.sort((a, b) => b.stats.play - a.stats.play);
-    return ok(items as T);
+    return ok(paginate(items, params) as T);
   }
 
   if (path === "/api/community/rankings" && method === "GET") {
     const items = state.voices
       .filter((item) => item.visibility === "public")
       .sort((a, b) => b.stats.like - a.stats.like)
-      .slice(0, 5)
       .map((item) => ({
         id: item.id,
         name: item.name,
@@ -243,7 +284,7 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
         userAvatar: item.authorAvatar || "",
         avatar: item.coverUrl,
       }));
-    return ok(items as T);
+    return ok(paginate(items, { ...params, pageSize: params.pageSize || "5" }) as T);
   }
 
   if (/^\/api\/community\/voices\/\d+\/(play|like|favorite|use)$/.test(path) && method === "POST") {
@@ -273,7 +314,23 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
 
   if (path === "/api/help/tutorials" && method === "GET") {
     const category = String(params.category || "guide");
-    return ok(state.tutorials.filter((item) => item.category === category) as T);
+    const items = state.tutorials
+      .filter((item) => item.category === category)
+      .map(({ id, category: tutorialCategory, title, duration, cover, summary }) => ({
+        id,
+        category: tutorialCategory,
+        title,
+        duration,
+        cover,
+        summary,
+      }));
+    return ok(paginate(items, params) as T);
+  }
+
+  if (/^\/api\/help\/tutorials\/\d+$/.test(path) && method === "GET") {
+    const tutorialId = Number(path.split("/")[4]);
+    const tutorial = state.tutorials.find((item) => item.id === tutorialId) || null;
+    return ok(tutorial as T);
   }
 
   if (path === "/api/help/feedback" && method === "POST") {
@@ -290,7 +347,7 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
 
   if (path === "/api/teaching/projects" && method === "GET") {
     return ok({
-      projects: state.teachingProjects,
+      items: paginate(state.teachingProjects, params),
       models: [
         { id: "gpt-4o-mini", label: "gpt-4o-mini", provider: "frontend-demo", isDefault: true },
         { id: "gpt-4.1-mini", label: "gpt-4.1-mini", provider: "frontend-demo", isDefault: false },
@@ -326,9 +383,40 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
   }
 
   if (path === "/api/teaching/ai-script" && method === "POST") {
-    return ok({
+    const task = createTask("teaching-script", {
       content: `【前端演示教学稿】\n课程主题：${String(data.prompt || "未指定")}\n\n这一段内容用于验证教学页的 AI 帮写交互、模型选择和保存流程，不依赖后端模型服务。`,
-    } as T, "讲解稿生成成功");
+    });
+    return ok(task as T, "讲解稿任务已创建");
+  }
+
+  if (path === "/api/teaching/generate" && method === "POST") {
+    const createdAt = new Date().toISOString();
+    const job = {
+      id: state.nextIds.job++,
+      userId: state.user.id,
+      type: "teaching" as const,
+      title: String(data.title || "前端演示教学任务"),
+      text: String(data.script || ""),
+      voiceId: Number(data.voiceId || 1),
+      status: "completed" as const,
+      audioUrl: "/api/media/demo-audio",
+      createdAt,
+      updatedAt: createdAt,
+      settings: {
+        ratio: String(data.ratio || "16:9"),
+        resolution: String(data.resolution || "1080P"),
+        bitrate: String(data.bitrate || "default"),
+      },
+    };
+    state.jobs.unshift(job);
+    saveDemoState(state);
+    const task = createTask("teaching-generate", job);
+    return ok(task as T, "教学生成任务已创建");
+  }
+
+  if (/^\/api\/tasks\/demo-task-/.test(path) && method === "GET") {
+    const taskId = path.split("/")[3] || "";
+    return ok((tasks.get(taskId) || null) as T);
   }
 
   return ok(createDemoUser() as T);

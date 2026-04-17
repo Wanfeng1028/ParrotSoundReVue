@@ -28,6 +28,19 @@
         </div>
       </div>
     </div>
+
+    <el-empty v-if="!items.length" description="暂无互动消息" />
+
+    <div class="pagination-row">
+      <el-pagination
+        background
+        layout="prev, pager, next"
+        :current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        @current-change="handlePageChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -40,10 +53,19 @@ import type { InteractionItem } from "../../types";
 
 const activeTab = ref("favorite");
 const items = ref<InteractionItem[]>([]);
+const page = ref(1);
+const pageSize = ref(12);
+const total = ref(0);
 
 const load = async () => {
-  const response = await fetchInteractions(activeTab.value);
-  items.value = response.data;
+  const response = await fetchInteractions(activeTab.value, page.value, pageSize.value);
+  items.value = response.data.items;
+  total.value = response.data.total;
+};
+
+const handlePageChange = (nextPage: number) => {
+  page.value = nextPage;
+  load();
 };
 
 const actionText = (type: string) => {
@@ -63,7 +85,7 @@ onMounted(() => {
 .page-inner { padding: 20px 30px; }
 :deep(.el-tabs__item.is-active) { color: #5362bc; }
 :deep(.el-tabs__active-bar) { background-color: #5362bc; }
-.list-container { margin-top: 10px; }
+.list-container { margin-top: 10px; min-height: 320px; }
 .interact-item { display: flex; align-items: center; padding: 20px 0; border-bottom: 1px solid #eee; }
 .avatar-group { position: relative; margin-right: 15px; }
 .badge-icon { position: absolute; bottom: -5px; right: -5px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; border: 2px solid #fff; font-size: 12px; background-color: #e6a23c; }
@@ -73,4 +95,5 @@ onMounted(() => {
 .time { margin-left: 10px; color: #999; }
 .thumb-box { width: 80px; height: 60px; border-radius: 6px; overflow: hidden; }
 .thumb-img { width: 100%; height: 100%; object-fit: cover; }
+.pagination-row { margin-top: 24px; display: flex; justify-content: flex-end; }
 </style>

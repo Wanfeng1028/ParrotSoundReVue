@@ -30,6 +30,19 @@
       </div>
     </div>
 
+    <el-empty v-if="!recordList.length && !loading" description="暂无音频记录" />
+
+    <div class="pagination-row">
+      <el-pagination
+        background
+        layout="prev, pager, next"
+        :current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        @current-change="handlePageChange"
+      />
+    </div>
+
     <div class="bottom-player" v-if="currentRecord">
       <div class="player-left">
         <div class="p-title">{{ currentRecord.title }}</div>
@@ -66,15 +79,20 @@ const recordList = ref<DubbingJob[]>([]);
 const currentRecord = ref<DubbingJob | null>(null);
 const playerDuration = ref(0);
 const isPlaying = ref(false);
+const page = ref(1);
+const pageSize = ref(8);
+const total = ref(0);
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 let audioPlayer: HTMLAudioElement | null = null;
+let searchTimer: number | null = null;
 
 const loadRecords = async () => {
   loading.value = true;
   try {
-    const response = await fetchAudioRecords(searchText.value);
-    recordList.value = response.data;
+    const response = await fetchAudioRecords(searchText.value, page.value, pageSize.value);
+    recordList.value = response.data.items;
+    total.value = response.data.total;
   } finally {
     loading.value = false;
   }
@@ -136,6 +154,7 @@ const downloadRecord = (item: DubbingJob) => {
 const removeRecord = async (id: number) => {
   await deleteAudioRecord(id);
   recordList.value = recordList.value.filter((item) => item.id !== id);
+  total.value = Math.max(0, total.value - 1);
   if (currentRecord.value?.id === id) {
     currentRecord.value = null;
     audioPlayer?.pause();
@@ -144,6 +163,11 @@ const removeRecord = async (id: number) => {
     playProgress.value = 0;
   }
   ElMessage.success("记录已删除");
+};
+
+const handlePageChange = (nextPage: number) => {
+  page.value = nextPage;
+  loadRecords();
 };
 
 const formatDate = (value: string) => new Date(value).toLocaleString();
@@ -162,7 +186,13 @@ const playerTimeLabel = computed(() => {
 });
 
 watch(searchText, () => {
-  loadRecords();
+  if (searchTimer) {
+    window.clearTimeout(searchTimer);
+  }
+  searchTimer = window.setTimeout(() => {
+    page.value = 1;
+    loadRecords();
+  }, 300);
 });
 
 onBeforeUnmount(() => {
@@ -183,7 +213,7 @@ onMounted(() => {
 .custom-search-input { width: 300px; }
 :deep(.custom-search-input .el-input__wrapper) { background-color: #fff; border-radius: 20px; padding-left: 15px; }
 .all-btn { border-radius: 20px; border: 1px solid #dcdfe6; color: #606266; font-weight: 500; }
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 280px; }
 .record-card { background: #fff; border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.03); display: flex; flex-direction: column; height: 220px; }
 .record-card::before { content: ""; position: absolute; left: 0; top: 25px; bottom: 25px; width: 4px; background-color: #5362bc; border-radius: 0 4px 4px 0; }
 .status-badge { position: absolute; top: 15px; right: 15px; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
@@ -197,6 +227,7 @@ onMounted(() => {
 .btn-delete { color: #f56c6c; background: #fef0f0; border-color: #fde2e2; }
 .btn-play { color: #5362bc; background: #fff; border-color: #5362bc; }
 .btn-download { color: #67c23a; background: #fff; border-color: #67c23a; }
+.pagination-row { margin-top: 24px; display: flex; justify-content: flex-end; padding-bottom: 12px; }
 .bottom-player { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 999; }
 .player-left { min-width: 200px; }
 .p-title { font-weight: bold; font-size: 16px; color: #333; margin-bottom: 4px; }

@@ -1,12 +1,14 @@
 {
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "mysql2": "^3.16.3",
+    "express-rate-limit": "^8.3.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "mysql2": "^3.16.3",
     "nodemailer": "^7.0.13",
     "redis": "^5.10.0"
   },

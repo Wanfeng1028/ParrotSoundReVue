@@ -16,8 +16,11 @@ const initMysql = async () => {
       user: env.mysql.user,
       password: env.mysql.password,
       database: env.mysql.database,
-      connectionLimit: 5,
+      connectionLimit: 20,
+      maxIdle: 10,
+      idleTimeout: 60000,
       waitForConnections: true,
+      queueLimit: 0,
     });
     await pool.query("SELECT 1");
     mysqlMode = "mysql";

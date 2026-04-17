@@ -24,7 +24,7 @@
           </div>
 
           <div class="search-box">
-            <el-input v-model="filters.search" placeholder="请输入关键词" class="custom-search" @change="load">
+            <el-input v-model="filters.search" placeholder="请输入关键词" class="custom-search" @input="debouncedLoad">
               <template #append>
                 <el-button class="search-btn" @click="load">搜索</el-button>
               </template>
@@ -37,7 +37,7 @@
         <div class="left-list" v-loading="loading">
           <div class="voice-card" v-for="item in voiceList" :key="item.id">
             <div class="card-left">
-              <img :src="item.coverUrl || fallbackAvatar" class="voice-avatar" @click="previewVoice(item.id, item.sampleAudioUrl)" />
+              <img :src="item.coverUrl || fallbackAvatar" class="voice-avatar" loading="lazy" @click="previewVoice(item.id, item.sampleAudioUrl)" />
             </div>
 
             <div class="card-center">
@@ -71,6 +71,19 @@
               <div class="stat-item yellow"><el-icon><Star /></el-icon> {{ item.stats.favorite }}</div>
             </div>
           </div>
+
+          <el-empty v-if="!voiceList.length && !loading" description="暂无匹配音色" />
+
+          <div class="pagination-row">
+            <el-pagination
+              background
+              layout="prev, pager, next"
+              :current-page="page"
+              :page-size="pageSize"
+              :total="total"
+              @current-change="handlePageChange"
+            />
+          </div>
         </div>
 
         <div class="right-rank">
@@ -90,7 +103,7 @@
                 </div>
               </div>
 
-              <img :src="item.avatar || fallbackAvatar" class="rank-img" />
+              <img :src="item.avatar || fallbackAvatar" class="rank-img" loading="lazy" />
             </div>
           </div>
         </div>
@@ -105,8 +118,24 @@ import { Clock, CaretRight, VideoPlay, StarFilled, Share, Star } from "@element-
 import fallbackAvatar from "../assets/images/voice-avatar.png";
 import { useCommunityLogic } from "../composables/useCommunityLogic";
 
-const { filters, voiceList, rankList, loading, playingId, load, previewVoice, likeVoice, favoriteVoice, useVoice, useRankVoice } =
-  useCommunityLogic();
+const {
+  filters,
+  voiceList,
+  rankList,
+  loading,
+  playingId,
+  page,
+  pageSize,
+  total,
+  load,
+  debouncedLoad,
+  previewVoice,
+  likeVoice,
+  favoriteVoice,
+  useVoice,
+  useRankVoice,
+  handlePageChange,
+} = useCommunityLogic();
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
@@ -128,7 +157,7 @@ onMounted(() => {
 .search-btn { border: none; background: transparent; color: #666; font-weight: bold; }
 .search-box { width: 240px; }
 .content-body { display: flex; gap: 40px; }
-.left-list { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+.left-list { flex: 1; display: flex; flex-direction: column; gap: 15px; min-height: 480px; }
 .voice-card { background-color: #f9f9f9; border-radius: 10px; padding: 20px; display: flex; gap: 20px; position: relative; }
 .card-left .voice-avatar { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; }
 .card-center { flex: 1; display: flex; flex-direction: column; }
@@ -157,4 +186,5 @@ onMounted(() => {
 .r-sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
 .r-heart { margin-left: 2px; }
 .rank-img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; margin-left: 10px; }
+.pagination-row { margin-top: auto; display: flex; justify-content: flex-end; padding-top: 12px; }
 </style>

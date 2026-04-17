@@ -169,6 +169,9 @@ const saveTeachingProject = (project) =>
 const listTutorials = (category) =>
   read().tutorials.filter((item) => !category || item.category === category);
 
+const getTutorialById = (tutorialId) =>
+  read().tutorials.find((item) => item.id === Number(tutorialId)) || null;
+
 const publicBase = () => {
   const state = read();
   return {
@@ -204,5 +207,6 @@ module.exports = {
   createFeedback,
   saveTeachingProject,
   listTutorials,
+  getTutorialById,
   resolveAssetUrl,
 };

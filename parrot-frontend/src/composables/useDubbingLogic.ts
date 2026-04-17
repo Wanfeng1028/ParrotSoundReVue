@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { exportDubbing, fetchDubbingOptions, generateDubbingDraft, previewDubbing } from "../api/dubbing";
+import { waitForTask } from "../api/tasks";
 
 interface VoiceOption {
   id: number;
@@ -48,10 +49,7 @@ function convertIntegerToChinese(value: number) {
     result += `${chineseDigits[digit] ?? String(digit)}${unitMap[unitIndex] ?? ""}`;
   });
 
-  return result
-    .replace(/零+/g, "零")
-    .replace(/零$/g, "")
-    .replace(/^一十/, "十");
+  return result.replace(/零+/g, "零").replace(/零$/g, "").replace(/^一十/, "十");
 }
 
 function convertNumberToChinese(raw: string) {
@@ -316,8 +314,11 @@ export function useDubbingLogic() {
       voiceId: currentVoice.value.id,
       settings: currentSettings(),
     });
-    playAudio(response.data.audioUrl);
-    ElMessage.success("试听任务已生成");
+    const task = await waitForTask<{ audioUrl: string }>(response.data.taskId);
+    if (task.result && typeof task.result === "object" && "audioUrl" in task.result) {
+      playAudio(String(task.result.audioUrl));
+    }
+    ElMessage.success("试听任务已完成");
   };
 
   const handleExport = async () => {
@@ -331,7 +332,10 @@ export function useDubbingLogic() {
       voiceId: currentVoice.value.id,
       settings: currentSettings(),
     });
-    playAudio(response.data.audioUrl);
+    const task = await waitForTask<{ audioUrl: string }>(response.data.taskId);
+    if (task.result && typeof task.result === "object" && "audioUrl" in task.result) {
+      playAudio(String(task.result.audioUrl));
+    }
     ElMessage.success("导出成功，已同步到音频记录");
   };
 
@@ -346,7 +350,8 @@ export function useDubbingLogic() {
         prompt: aiInput.value,
         model: selectedModel.value,
       });
-      textContent.value = response.data.content;
+      const task = await waitForTask<{ content: string }>(response.data.taskId);
+      textContent.value = task.result?.content || "";
       ElMessage.success("AI 文稿生成成功");
     } finally {
       generating.value = false;

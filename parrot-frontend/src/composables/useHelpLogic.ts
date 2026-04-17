@@ -1,15 +1,19 @@
 import { reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
-import { fetchTutorials, submitFeedback as submitFeedbackApi } from "../api/help";
-import type { TutorialItem } from "../types";
+import { fetchTutorialDetail, fetchTutorials, submitFeedback as submitFeedbackApi } from "../api/help";
+import type { TutorialDetail, TutorialListItem } from "../types";
 
 export function useHelpLogic() {
   const router = useRouter();
   const activeTab = ref("guide");
-  const videoList = ref<TutorialItem[]>([]);
+  const videoList = ref<TutorialListItem[]>([]);
   const tutorialVisible = ref(false);
-  const currentTutorial = ref<TutorialItem | null>(null);
+  const currentTutorial = ref<TutorialDetail | null>(null);
+  const loading = ref(false);
+  const page = ref(1);
+  const pageSize = ref(6);
+  const total = ref(0);
   const feedbackForm = reactive({
     usageTime: "不到 1 个月",
     content: "",
@@ -22,7 +26,7 @@ export function useHelpLogic() {
     education: "/teching",
   };
 
-  const buildSteps = (tutorial: TutorialItem) =>
+  const buildSteps = (tutorial: TutorialDetail) =>
     tutorial.steps?.length
       ? tutorial.steps
       : [
@@ -31,23 +35,33 @@ export function useHelpLogic() {
           "保存结果后到历史记录或用户中心继续查看。",
         ];
 
-  const switchTab = async (tab: string) => {
-    activeTab.value = tab;
-    if (tab !== "feedback") {
-      const response = await fetchTutorials(tab);
-      videoList.value = response.data.map((item) => ({
-        ...item,
-        steps: buildSteps(item),
-        targetRoute: item.targetRoute || defaultTargetMap[item.category] || "/help",
-      }));
+  const loadTutorials = async () => {
+    if (activeTab.value === "feedback") {
+      return;
+    }
+    loading.value = true;
+    try {
+      const response = await fetchTutorials(activeTab.value, page.value, pageSize.value);
+      videoList.value = response.data.items;
+      total.value = response.data.total;
+    } finally {
+      loading.value = false;
     }
   };
 
-  const openTutorial = (tutorial: TutorialItem) => {
+  const switchTab = async (tab: string) => {
+    activeTab.value = tab;
+    page.value = 1;
+    if (tab === "feedback") return;
+    await loadTutorials();
+  };
+
+  const openTutorial = async (tutorial: TutorialListItem) => {
+    const response = await fetchTutorialDetail(tutorial.id);
     currentTutorial.value = {
-      ...tutorial,
-      steps: buildSteps(tutorial),
-      targetRoute: tutorial.targetRoute || defaultTargetMap[tutorial.category] || "/help",
+      ...response.data,
+      steps: buildSteps(response.data),
+      targetRoute: response.data.targetRoute || defaultTargetMap[response.data.category] || "/help",
     };
     tutorialVisible.value = true;
   };
@@ -72,15 +86,25 @@ export function useHelpLogic() {
     ElMessage.success("反馈提交成功");
   };
 
+  const handlePageChange = async (nextPage: number) => {
+    page.value = nextPage;
+    await loadTutorials();
+  };
+
   return {
     activeTab,
     feedbackForm,
     videoList,
     tutorialVisible,
     currentTutorial,
+    loading,
+    page,
+    pageSize,
+    total,
     switchTab,
     openTutorial,
     goToTutorialTarget,
     submitFeedback,
+    handlePageChange,
   };
 }

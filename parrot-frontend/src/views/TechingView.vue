@@ -136,7 +136,7 @@
     <div class="right-sidebar">
       <div class="resource-panel">
         <div class="search-row">
-          <el-input v-model="searchText" placeholder="搜索项目 / 资源" size="small" class="custom-search" />
+          <el-input v-model="searchText" placeholder="搜索项目 / 资源" size="small" class="custom-search" @input="debouncedSearchProjects" />
         </div>
 
         <div class="project-grid">
@@ -147,6 +147,17 @@
               <div class="project-desc">{{ project.script.slice(0, 38) || "暂无讲解稿" }}</div>
               <div class="project-meta">{{ project.status }}</div>
             </div>
+          </div>
+          <div class="project-pagination">
+            <el-pagination
+              small
+              background
+              layout="prev, pager, next"
+              :current-page="page"
+              :page-size="pageSize"
+              :total="total"
+              @current-change="handlePageChange"
+            />
           </div>
         </div>
 
@@ -227,6 +238,9 @@ const {
   selectedAvatarName,
   selectedBackgroundName,
   selectedVoiceName,
+  page,
+  pageSize,
+  total,
   loadProjects,
   handleSave,
   handleGenerate,
@@ -239,6 +253,8 @@ const {
   selectResourceTab,
   selectResource,
   applyProject,
+  debouncedSearchProjects,
+  handlePageChange,
 } = useEducationLogic();
 
 const openImporter = () => {
@@ -312,6 +328,7 @@ onMounted(() => {
 .filter-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
 .panel-title { font-size: 13px; font-weight: 700; color: #59618d; margin-bottom: 10px; }
 .project-grid { margin-bottom: 16px; }
+.project-pagination { margin-top: 10px; display: flex; justify-content: flex-end; }
 .resource-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 20px; }
 .project-grid-list { max-height: 320px; overflow-y: auto; }
 .res-card { width: 100%; min-height: 128px; background: #f5f5f5; border-radius: 6px; overflow: hidden; cursor: pointer; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid transparent; }
