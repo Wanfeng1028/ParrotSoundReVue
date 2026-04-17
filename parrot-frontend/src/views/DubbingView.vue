@@ -22,18 +22,33 @@
       <div class="editor-card">
         <div class="toolbar">
           <div class="tools-list">
-            <div class="tool-btn"><el-icon class="tool-icon-el"><Sort /></el-icon><span>连读</span></div>
-            <div class="tool-btn"><el-icon class="tool-icon-el"><Timer /></el-icon><span>设置停顿</span></div>
-            <div class="tool-btn"><el-icon class="tool-icon-el"><ChatDotRound /></el-icon><span>多音字</span></div>
-            <div class="tool-btn"><el-icon class="tool-icon-el"><PriceTag /></el-icon><span>数字</span></div>
-            <div class="tool-btn"><el-icon class="tool-icon-el"><Collection /></el-icon><span>单词词组</span></div>
+            <button type="button" class="tool-btn" @click="handleLiaison">
+              <el-icon class="tool-icon-el"><Sort /></el-icon>
+              <span>连读</span>
+            </button>
+            <button type="button" class="tool-btn" @click="handleInsertPause">
+              <el-icon class="tool-icon-el"><Timer /></el-icon>
+              <span>设置停顿</span>
+            </button>
+            <button type="button" class="tool-btn" @click="handlePolyphoneAssist">
+              <el-icon class="tool-icon-el"><ChatDotRound /></el-icon>
+              <span>多音字</span>
+            </button>
+            <button type="button" class="tool-btn" @click="handleNumberNormalize">
+              <el-icon class="tool-icon-el"><PriceTag /></el-icon>
+              <span>数字</span>
+            </button>
+            <button type="button" class="tool-btn" @click="handlePhraseNormalize">
+              <el-icon class="tool-icon-el"><Collection /></el-icon>
+              <span>单词词组</span>
+            </button>
           </div>
 
           <div class="toolbar-right">
-            <div class="current-voice-bubble" v-if="currentVoice">
+            <button type="button" class="current-voice-bubble" v-if="currentVoice" @click="previewCurrentVoice">
               <el-avatar :size="28" :src="currentVoice.avatar || undefined">{{ currentVoice.name.slice(0, 1) }}</el-avatar>
               <span class="name">{{ currentVoice.name }}</span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -51,11 +66,11 @@
 
         <div class="bottom-actions">
           <div class="action-left">
-            <el-button plain size="small" @click="textContent = ''">一键清空</el-button>
-            <el-button plain size="small" @click="textContent = textContent.trim().replace(/\n{2,}/g, '\n')">
-              智能分段
-            </el-button>
-            <el-tag type="info">当前情感：{{ currentEmotion }}</el-tag>
+            <el-button plain size="small" @click="handleClearText">一键清空</el-button>
+            <el-button plain size="small" @click="handleSmartSegment">智能分段</el-button>
+            <el-tag type="info" class="emotion-indicator" @click="cycleEmotion">
+              当前情感：{{ currentEmotion }}
+            </el-tag>
           </div>
           <div class="action-right">
             <el-button class="white-btn" @click="handlePlay">试听</el-button>
@@ -155,6 +170,15 @@ const {
   loadOptions,
   selectVoice,
   selectEmotion,
+  handleClearText,
+  handleSmartSegment,
+  handleLiaison,
+  handleInsertPause,
+  handlePolyphoneAssist,
+  handleNumberNormalize,
+  handlePhraseNormalize,
+  previewCurrentVoice,
+  cycleEmotion,
   handlePlay,
   handleExport,
   handleAIGenerate,
@@ -242,6 +266,17 @@ onMounted(() => {
   font-size: 12px;
   color: #666;
   gap: 4px;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.tool-btn:hover {
+  color: #5362bc;
+}
+
+.tool-btn:hover .tool-icon-el {
+  color: #5362bc;
 }
 
 .tool-icon-el {
@@ -258,6 +293,12 @@ onMounted(() => {
   gap: 8px;
   font-size: 13px;
   font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.current-voice-bubble:hover {
+  color: #5362bc;
 }
 
 .textarea-container {
@@ -306,6 +347,10 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+.emotion-indicator {
+  cursor: pointer;
 }
 
 .white-btn {

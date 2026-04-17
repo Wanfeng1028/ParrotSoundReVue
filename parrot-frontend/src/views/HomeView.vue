@@ -16,8 +16,12 @@
         打造数字语音课程，PPT转视频，个性化语音合成等。<br />
         提供智能配音、声音克隆、教育教学等服务，帮助用户实现语音定制化需求。
       </p>
-      <el-button class="home-banner__btn" type="primary"> 开始使用 </el-button>
-      <el-button class="home-banner__btn" type="default"> 了解更多 </el-button>
+      <el-button class="home-banner__btn" type="primary" @click="handleStartUsing">
+        开始使用
+      </el-button>
+      <el-button class="home-banner__btn" type="default" @click="handleLearnMore">
+        了解更多
+      </el-button>
     </div>
   </section>
   <!-- 第二屏幕 -->
@@ -172,7 +176,12 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from "vue-router";
 import { useTypeWriter } from "../composables/HomeTpyeWriter.ts";
+import { useAuthStore } from "../stores/auth";
+
+const router = useRouter();
+const authStore = useAuthStore();
 
 const { text } = useTypeWriter("鹦音坊--AI语音平台", 100, 500);
 const { text: title } = useTypeWriter("强大的核心技术", 150, 1000); // 稍微晚一点开始
@@ -214,6 +223,14 @@ const carouselItems = [
     desc: "将传统PPT快速转化为带有智能配音的有声视频课件，提升教学资源制作效率。",
   },
 ];
+
+const handleStartUsing = () => {
+  router.push(authStore.isLoggedIn ? "/dubbing" : "/login");
+};
+
+const handleLearnMore = () => {
+  router.push("/help");
+};
 </script>
 
 <style scoped>
