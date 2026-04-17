@@ -56,7 +56,11 @@
 
 .auth-card__header h1 {
   margin: 0;
-  color: #18181b;
+  text-align: center;
+  background: linear-gradient(135deg, #7db8ff, #2563eb);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   font-size: 34px;
   line-height: 1.08;
 }
@@ -65,10 +69,11 @@
   margin-top: 8px;
   color: #808694;
   font-size: 14px;
+  text-align: center;
 }
 
 .auth-card__header a {
-  color: #0f766e;
+  color: #2563eb;
   font-weight: 600;
 }
 
@@ -100,24 +105,25 @@
 }
 
 .auth-card__meta .el-link {
-  color: #6b7280;
+  color: #2563eb;
   font-weight: 600;
 }
 
 .auth-submit {
   width: 100%;
-  min-height: 50px;
+  min-height: 56px;
   border: none;
   border-radius: 999px;
-  background: #0b0b0c;
+  background: linear-gradient(135deg, #59a9ff, #2563eb);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
 }
 
 .auth-submit:hover,
 .auth-submit:focus-visible {
-  background: #19191d;
+  background: linear-gradient(135deg, #4a9efc, #1f56d8);
 }
 
 .auth-divider {
@@ -144,9 +150,9 @@
 
 .social-button {
   width: 100%;
-  min-height: 52px;
+  min-height: 56px;
   padding: 0 18px;
-  justify-content: flex-start;
+  justify-content: center;
   border-radius: 999px;
   border-color: #eceef3;
   background: #ffffff;
@@ -161,12 +167,12 @@
   color: #111827;
 }
 
-.social-button > span {
-  display: inline-flex;
+.social-button__content {
+  display: grid;
+  grid-template-columns: 28px 1fr 28px;
   align-items: center;
-  gap: 12px;
   width: 100%;
-  justify-content: flex-start;
+  column-gap: 14px;
 }
 
 .social-button__icon {
@@ -177,6 +183,17 @@
   height: 24px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.social-button__label {
+  text-align: left;
+  font-size: 15px;
+  color: #445066;
+}
+
+.social-button__placeholder {
+  width: 28px;
+  height: 24px;
 }
 
 .social-button__icon-svg {

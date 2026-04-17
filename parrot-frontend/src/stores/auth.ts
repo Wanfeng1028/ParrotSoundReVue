@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { AuthUser } from "../types";
-import { fetchCurrentUser, login, register, resetPassword, sendCodeApi } from "../api/auth";
+import { fetchCurrentUser, login, register, resetPassword, sendCodeApi, socialLogin } from "../api/auth";
 import {
   FRONTEND_DEMO_ENABLED,
   FRONTEND_DEMO_EMAIL,
@@ -85,6 +85,19 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  const loginWithSocialProvider = async (provider: "google" | "facebook" | "microsoft" | "x" | "apple") => {
+    loading.value = true;
+    try {
+      setFrontendDemoMode(false);
+      const response = await socialLogin({ provider });
+      setToken(response.data.token);
+      user.value = response.data.user;
+      return response.data.user;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const requestCode = async (email: string) => sendCodeApi({ email });
 
   const resetAccountPassword = async (payload: {
@@ -118,6 +131,7 @@ export const useAuthStore = defineStore("auth", () => {
     frontendDemoEnabled: FRONTEND_DEMO_ENABLED,
     initialize,
     loginWithPassword,
+    loginWithSocialProvider,
     registerAccount,
     requestCode,
     resetAccountPassword,

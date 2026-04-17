@@ -8,6 +8,13 @@ const { authLimiter, codeLimiter } = require("../middleware/rate-limit");
 const { addMinutes } = require("../utils/time");
 
 const router = express.Router();
+const socialProfiles = {
+  google: { email: "google.user@parrotsound.local", username: "Google 用户", avatarUrl: "" },
+  facebook: { email: "facebook.user@parrotsound.local", username: "Facebook 用户", avatarUrl: "" },
+  microsoft: { email: "microsoft.user@parrotsound.local", username: "Microsoft 用户", avatarUrl: "" },
+  x: { email: "x.user@parrotsound.local", username: "X 用户", avatarUrl: "" },
+  apple: { email: "apple.user@parrotsound.local", username: "Apple 用户", avatarUrl: "" },
+};
 
 router.post("/send-code", codeLimiter, async (req, res, next) => {
   try {
@@ -84,6 +91,44 @@ router.post("/login", authLimiter, async (req, res, next) => {
           },
         },
         "登录成功",
+      ),
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/social-login", authLimiter, async (req, res, next) => {
+  try {
+    const provider = String(req.body.provider || "").trim().toLowerCase();
+    const profile = socialProfiles[provider];
+    if (!profile) return fail(res, 400, "暂不支持该登录方式");
+    let user = repository.getUserByEmail(profile.email);
+    if (!user) {
+      const passwordHash = await bcrypt.hash(`social-${provider}-${Date.now()}`, 10);
+      user = repository.createUser({
+        email: profile.email,
+        username: profile.username,
+        passwordHash,
+        avatarUrl: profile.avatarUrl,
+      });
+    }
+    const token = createToken(user);
+    return res.json(
+      ok(
+        {
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            phone: user.phone,
+            age: user.age,
+            gender: user.gender,
+            avatarUrl: user.avatarUrl,
+          },
+        },
+        `${profile.username}登录成功`,
       ),
     );
   } catch (error) {

@@ -13,6 +13,13 @@ export const login = (data: { email: string; password: string }) =>
     data,
   });
 
+export const socialLogin = (data: { provider: "google" | "facebook" | "microsoft" | "x" | "apple" }) =>
+  apiRequest<AuthPayload>({
+    url: "/api/auth/social-login",
+    method: "POST",
+    data,
+  });
+
 export const sendCodeApi = (data: { email: string }) =>
   apiRequest<{ email: string; expiresAt: string; delivery: string; code?: string }>({
     url: "/api/auth/send-code",

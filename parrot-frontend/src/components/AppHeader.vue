@@ -220,8 +220,8 @@ onBeforeUnmount(() => {
 }
 
 .app-header__nav-link.is-active {
-  color: var(--brand-700);
-  background: rgba(13, 148, 136, 0.1);
+  color: #2563eb;
+  background: linear-gradient(135deg, rgba(125, 184, 255, 0.22), rgba(37, 99, 235, 0.18));
 }
 
 .app-header__right {
@@ -249,8 +249,8 @@ onBeforeUnmount(() => {
 }
 
 .app-header__login:hover {
-  color: var(--brand-700);
-  border-color: rgba(13, 148, 136, 0.25);
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .app-header__signup {
