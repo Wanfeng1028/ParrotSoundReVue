@@ -278,7 +278,7 @@ const handleLearnMore = () => {
 
 .home-banner__content {
   position: absolute;
-  top: 46%;
+  top: 42%;
   left: 12%;
   transform: translateY(-50%);
   max-width: 720px;
@@ -318,13 +318,22 @@ const handleLearnMore = () => {
 }
 
 .home-banner__btn {
-  width: 128px;
-  height: 42px;
+  min-width: 160px;
+  height: 56px;
+  padding: 0 28px;
+  border: none;
+  border-radius: 20px;
   font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+  background: linear-gradient(135deg, #5aaeff, #2563eb);
 }
 
 .home-banner__btn--light {
-  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #dbe5f3;
+  background: rgba(255, 255, 255, 0.94);
+  color: #445066;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
 }
 
 .section-two__content {
@@ -551,7 +560,7 @@ const handleLearnMore = () => {
   align-items: center;
   padding: 28px 32px;
   border-radius: 28px;
-  background: rgba(17, 32, 49, 0.95);
+  background: linear-gradient(135deg, #58aefe 0%, #2563eb 100%);
   color: #f8fafc;
 }
 
