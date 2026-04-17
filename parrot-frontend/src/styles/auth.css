@@ -40,18 +40,6 @@
     radial-gradient(circle at left center, rgba(13, 148, 136, 0.08), transparent 28%);
 }
 
-.auth-page__headline {
-  position: absolute;
-  top: 20px;
-  right: max(4vw, 20px);
-  font-size: clamp(28px, 4vw, 48px);
-  line-height: 1;
-  letter-spacing: 0.08em;
-  color: rgba(24, 24, 27, 0.24);
-  font-family: "Avenir Next", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  pointer-events: none;
-}
-
 .auth-card {
   position: relative;
   z-index: 1;
@@ -251,12 +239,6 @@
   .auth-card {
     padding: 28px 20px 22px;
     border-radius: 22px;
-  }
-
-  .auth-page__headline {
-    top: 12px;
-    right: 12px;
-    font-size: 24px;
   }
 
   .verify-btn {

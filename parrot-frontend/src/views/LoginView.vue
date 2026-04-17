@@ -5,7 +5,6 @@
       <img :src="loginBgPng" alt="Parrot Sound 登录背景" fetchpriority="high" />
     </picture>
     <div class="auth-page__overlay"></div>
-    <div class="auth-page__headline">欢迎回来</div>
 
     <section class="auth-card">
       <div class="auth-card__header">
