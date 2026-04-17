@@ -4,8 +4,7 @@
   <h1>ParrotSoundReVue</h1>
 
   <p>
-    An open-source AI voice application for dubbing, voice cloning, teaching content generation,
-    and community voice workflows.
+    An open-source AI voice app for dubbing, voice cloning, and teaching content creation.
   </p>
 
   <p>
@@ -39,6 +38,22 @@ This repository is open source under the MIT license and keeps the frontend and 
 - `parrot-frontend`: `Vue 3 + Vite + TypeScript + Element Plus`
 - `parrot-backend`: `Express + Redis adapter + MySQL adapter + JWT`
 - AI integration: OpenAI-compatible model adapter with configurable provider and model list
+
+## GitHub About
+
+If you want the GitHub repository `About` area to match this README, use the following metadata:
+
+### Description
+
+`An open-source AI voice app for dubbing, voice cloning, and teaching content creation.`
+
+### Website
+
+`https://github.com/Wanfeng1028/ParrotSoundReVue#readme`
+
+### Topics
+
+`ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `speech`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
 
 ## Key Features
 
