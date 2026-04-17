@@ -3,6 +3,7 @@ import type { AuthUser } from "../types";
 export const FRONTEND_DEMO_EMAIL = "demo@frontend.local";
 export const FRONTEND_DEMO_PASSWORD = "Demo123456";
 export const FRONTEND_DEMO_TOKEN = "frontend-demo-token";
+export const FRONTEND_DEMO_ENABLED = import.meta.env.VITE_ENABLE_FRONTEND_DEMO === "true";
 const FRONTEND_DEMO_MODE_KEY = "frontendDemoMode";
 const FRONTEND_DEMO_DATA_KEY = "frontendDemoData";
 
@@ -268,7 +269,7 @@ const initialState = (): DemoState => {
         summary: "教学稿件生成与保存演示。",
         content: "可导入课件、多页编辑讲解稿，并为当前页面选择数字人、声音和背景。",
         steps: ["导入课件或新建页面。", "配置资源并生成 AI 讲解稿。", "保存草稿或生成视频任务。"],
-        targetRoute: "/teching",
+        targetRoute: "/teaching",
       },
     ],
     teachingProjects: [
@@ -315,9 +316,13 @@ const initialState = (): DemoState => {
   };
 };
 
-export const isFrontendDemoMode = () => localStorage.getItem(FRONTEND_DEMO_MODE_KEY) === "1";
+export const isFrontendDemoMode = () => FRONTEND_DEMO_ENABLED && localStorage.getItem(FRONTEND_DEMO_MODE_KEY) === "1";
 
 export const setFrontendDemoMode = (enabled: boolean) => {
+  if (!FRONTEND_DEMO_ENABLED) {
+    localStorage.removeItem(FRONTEND_DEMO_MODE_KEY);
+    return;
+  }
   if (enabled) {
     localStorage.setItem(FRONTEND_DEMO_MODE_KEY, "1");
   } else {

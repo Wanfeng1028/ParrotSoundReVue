@@ -1,0 +1,13 @@
+{
+  "name": "parrot-sound-revue",
+  "private": true,
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:frontend": "npm --prefix parrot-frontend run dev",
+    "dev:backend": "npm --prefix parrot-backend run dev",
+    "start:backend": "npm --prefix parrot-backend run start",
+    "build": "npm --prefix parrot-frontend run build"
+  }
+}

@@ -1,25 +1,25 @@
 <template>
-  <header class="app-header">
+  <header class="app-header" :class="{ 'app-header--scrolled': isScrolled }">
     <div class="app-header__inner">
       <RouterLink class="app-header__brand" to="/home">
-        <img class="app-header__logo" src="../assets/images/logo.png" alt="Parrot Sound AI" />
+        <img class="app-header__logo" src="../assets/images/logo.png" alt="Parrot Sound ReVue" />
+        <div class="app-header__brand-copy">
+          <span class="app-header__brand-kicker">AI Voice Studio</span>
+          <strong>ParrotSoundReVue</strong>
+        </div>
       </RouterLink>
 
-      <el-menu
-        class="el-menu-demo app-header__menu"
-        mode="horizontal"
-        :default-active="$route.path"
-        router
-        :ellipsis="false"
-      >
-        <el-menu-item index="/home">首页</el-menu-item>
-        <el-menu-item index="/dubbing">智能配音</el-menu-item>
-        <el-menu-item index="/audio-record">音频记录</el-menu-item>
-        <el-menu-item index="/clone">声音克隆</el-menu-item>
-        <el-menu-item index="/teching">教育教学</el-menu-item>
-        <el-menu-item index="/community">社区交流</el-menu-item>
-        <el-menu-item index="/help">帮助中心</el-menu-item>
-      </el-menu>
+      <nav class="app-header__nav" aria-label="Primary">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.to"
+          class="app-header__nav-link"
+          :class="{ 'is-active': isActive(item.to) }"
+          :to="item.to"
+        >
+          {{ item.label }}
+        </RouterLink>
+      </nav>
 
       <div class="app-header__right">
         <template v-if="isLogin">
@@ -28,7 +28,10 @@
               <el-avatar :size="32" :src="authStore.user?.avatarUrl || undefined">
                 {{ username.slice(0, 1) }}
               </el-avatar>
-              <span class="username-text">{{ username }}</span>
+              <div class="user-dropdown-link__copy">
+                <span class="user-dropdown-link__label">工作台</span>
+                <span class="username-text">{{ username }}</span>
+              </div>
               <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </div>
 
@@ -51,13 +54,12 @@
         <template v-else>
           <div class="auth-buttons">
             <RouterLink class="app-header__login" to="/login">
-              <img class="app-header__login-icon" src="../assets/images/avatar-default.png" alt="登录" />
-              <el-link class="app-header__login-link" :underline="false">Login</el-link>
+              登录
             </RouterLink>
 
             <RouterLink to="/register">
               <el-button class="app-header__signup" type="primary" round>
-                Sign Up
+                免费开始
               </el-button>
             </RouterLink>
           </div>
@@ -68,16 +70,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { User, Files, SwitchButton, ArrowDown } from "@element-plus/icons-vue";
 import { useAuthStore } from "../stores/auth";
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
+const isScrolled = ref(false);
+
+const navItems = [
+  { label: "首页", to: "/home" },
+  { label: "智能配音", to: "/dubbing" },
+  { label: "音频记录", to: "/audio-record" },
+  { label: "声音克隆", to: "/clone" },
+  { label: "教育教学", to: "/teaching" },
+  { label: "社区交流", to: "/community" },
+  { label: "帮助中心", to: "/help" },
+];
 
 const isLogin = computed(() => authStore.isLoggedIn);
 const username = computed(() => authStore.user?.username || "我的");
+
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 16;
+};
+
+const normalizedPath = computed(() => (route.path === "/teching" ? "/teaching" : route.path));
+
+const isActive = (path: string) => normalizedPath.value === path || normalizedPath.value.startsWith(`${path}/`);
 
 const handleCommand = (cmd: string) => {
   if (cmd === "logout") {
@@ -89,6 +111,15 @@ const handleCommand = (cmd: string) => {
     router.push("/user/history");
   }
 };
+
+onMounted(() => {
+  handleScroll();
+  window.addEventListener("scroll", handleScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("scroll", handleScroll);
+});
 </script>
 
 <style scoped>
@@ -97,128 +128,210 @@ const handleCommand = (cmd: string) => {
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: hsl(0, 0%, 99%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  background: rgba(245, 248, 252, 0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+  transition:
+    background-color 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.app-header--scrolled {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  border-bottom-color: rgba(17, 24, 39, 0.08);
 }
 
 .app-header__inner {
-  height: 60px;
-  max-width: 1200px;
+  min-height: var(--header-height);
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
 }
 
 .app-header__brand {
   display: flex;
   align-items: center;
-  text-decoration: none;
-  margin-right: 20px;
+  gap: 14px;
+  color: var(--text-strong);
+  flex-shrink: 0;
 }
 
 .app-header__logo {
-  height: 50px;
+  height: 44px;
   width: auto;
-  object-fit: contain;
-  display: block;
 }
 
-.app-header__menu {
-  flex: 1;
-  background: transparent;
-  border-bottom: none !important;
+.app-header__brand-copy {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-header__brand-kicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.app-header__brand-copy strong {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.app-header__nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-:deep(.el-menu--horizontal .el-menu-item) {
-  padding: 0 16px;
+.app-header__nav::-webkit-scrollbar {
+  display: none;
+}
+
+.app-header__nav-link {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
   font-size: 14px;
-  color: #333;
-  background: transparent;
-  border-bottom: none;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
-:deep(.el-menu--horizontal .el-menu-item:hover) {
-  color: #6b5cff;
-  background: transparent;
+.app-header__nav-link:hover {
+  color: var(--text-strong);
+  background: rgba(15, 23, 42, 0.05);
+  transform: translateY(-1px);
 }
 
-:deep(.el-menu--horizontal .el-menu-item.is-active) {
-  color: #6b5cff !important;
-  background: transparent !important;
-  border-bottom: 2px solid #6b5cff !important;
+.app-header__nav-link.is-active {
+  color: var(--brand-700);
+  background: rgba(13, 148, 136, 0.1);
 }
 
 .app-header__right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .auth-buttons {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .app-header__login {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-.app-header__login-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-}
-
-.app-header__login-link {
-  font-size: 15px;
-  color: #333;
-  font-weight: 500;
-}
-
-.app-header__login:hover .app-header__login-link {
-  color: #6b5cff;
+.app-header__login:hover {
+  color: var(--brand-700);
+  border-color: rgba(13, 148, 136, 0.25);
 }
 
 .app-header__signup {
-  padding: 8px 20px;
+  min-height: 42px;
+  padding: 0 20px;
   font-weight: 600;
-  background-color: #6b5cff;
-  border-color: #6b5cff;
+  background: linear-gradient(135deg, var(--brand-600), var(--accent-500));
+  border: none;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
 }
 
 .app-header__signup:hover {
-  background-color: #5362bc;
-  border-color: #5362bc;
+  transform: translateY(-1px);
 }
 
 .user-dropdown-link {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 20px;
-  transition: background 0.3s;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  transition: background-color 0.2s ease;
 }
 
 .user-dropdown-link:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(240, 253, 250, 0.95);
+}
+
+.user-dropdown-link__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-dropdown-link__label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
 }
 
 .username-text {
   font-size: 14px;
-  font-weight: bold;
-  color: #333;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+@media (max-width: 1080px) {
+  .app-header__inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-bottom: 18px;
+  }
+
+  .app-header__brand,
+  .app-header__right {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-header__inner {
+    padding: 14px 16px 18px;
+  }
+
+  .app-header__brand-copy strong {
+    font-size: 15px;
+  }
+
+  .app-header__nav {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .auth-buttons {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

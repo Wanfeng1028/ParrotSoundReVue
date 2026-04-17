@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import type { AuthUser } from "../types";
 import { fetchCurrentUser, login, register, resetPassword, sendCodeApi } from "../api/auth";
 import {
+  FRONTEND_DEMO_ENABLED,
   FRONTEND_DEMO_EMAIL,
   FRONTEND_DEMO_PASSWORD,
   FRONTEND_DEMO_TOKEN,
@@ -50,7 +51,7 @@ export const useAuthStore = defineStore("auth", () => {
     loading.value = true;
     try {
       const email = payload.email.trim().toLowerCase();
-      if (email === FRONTEND_DEMO_EMAIL && payload.password === FRONTEND_DEMO_PASSWORD) {
+      if (FRONTEND_DEMO_ENABLED && email === FRONTEND_DEMO_EMAIL && payload.password === FRONTEND_DEMO_PASSWORD) {
         resetDemoState();
         setFrontendDemoMode(true);
         setToken(FRONTEND_DEMO_TOKEN);
@@ -114,6 +115,7 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     loading,
     isLoggedIn,
+    frontendDemoEnabled: FRONTEND_DEMO_ENABLED,
     initialize,
     loginWithPassword,
     registerAccount,

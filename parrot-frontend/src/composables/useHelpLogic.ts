@@ -23,7 +23,7 @@ export function useHelpLogic() {
     guide: "/home",
     dubbing: "/dubbing",
     clone: "/clone",
-    education: "/teching",
+    education: "/teaching",
   };
 
   const buildSteps = (tutorial: TutorialDetail) =>
