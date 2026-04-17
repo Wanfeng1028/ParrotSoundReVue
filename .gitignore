@@ -13,3 +13,4 @@ parrot-frontend/dist/
 parrot-backend/node_modules/
 parrot-backend/data/
 parrot-backend/uploads/
+parrot-backend/server.js
