@@ -2,10 +2,10 @@
   <header class="app-header" :class="{ 'app-header--scrolled': isScrolled }">
     <div class="app-header__inner">
       <RouterLink class="app-header__brand" to="/home">
-        <img class="app-header__logo" src="../assets/images/logo.png" alt="Parrot Sound ReVue" />
+        <img class="app-header__logo" src="../assets/images/logo.png" alt="Parrot Sound" />
         <div class="app-header__brand-copy">
           <span class="app-header__brand-kicker">AI Voice Studio</span>
-          <strong>ParrotSoundReVue</strong>
+          <strong>ParrotSound</strong>
         </div>
       </RouterLink>
 

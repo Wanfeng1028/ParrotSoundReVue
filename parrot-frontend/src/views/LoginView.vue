@@ -5,72 +5,77 @@
       <img :src="loginBgPng" alt="Parrot Sound login background" fetchpriority="high" />
     </picture>
     <div class="auth-page__overlay"></div>
+    <div class="auth-page__headline">Which is</div>
 
-    <div class="auth-shell">
-      <section class="auth-intro">
-        <span class="auth-intro__badge">Sign in</span>
-        <h1>回到你的 AI 语音工作台。</h1>
-        <p>
-          登录后可以继续处理配音任务、声音资产和教学项目。页面布局已改为自适应双栏，中小屏也能稳定使用。
-        </p>
+    <section class="auth-card">
+      <div class="auth-card__header">
+        <h1>Sign in</h1>
+        <p>New user? <RouterLink to="/register">Create an account</RouterLink></p>
+      </div>
 
-        <div class="auth-highlights">
-          <div class="auth-highlight">
-            <strong>任务可追踪</strong>
-            <span>AI 生成、试听、导出都能回查状态和结果。</span>
-          </div>
-          <div class="auth-highlight">
-            <strong>资源可复用</strong>
-            <span>声音模型、课程项目和社区内容可贯穿多个页面流转。</span>
-          </div>
+      <el-form label-position="top" class="auth-form">
+        <el-form-item prop="email">
+          <el-input v-model="loginForm.email" class="auth-input" type="email" placeholder="Email Address" @keyup.enter="hanadleLogin">
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="password">
+          <el-input
+            v-model="loginForm.password"
+            class="auth-input"
+            type="password"
+            show-password
+            placeholder="Password"
+            @keyup.enter="hanadleLogin"
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <div class="auth-card__meta">
+          <el-link :underline="false" @click="$router.push('/re-password')">Forgot password?</el-link>
         </div>
-      </section>
 
-      <section class="auth-card">
-        <div class="auth-card__header">
-          <h2>登录账户</h2>
-          <RouterLink to="/home">返回首页</RouterLink>
+        <el-button type="primary" class="auth-submit" :loading="loading" @click="hanadleLogin">
+          Login
+        </el-button>
+      </el-form>
+
+      <div class="auth-divider"><span>or</span></div>
+
+      <div class="social-list">
+        <button
+          v-for="provider in socialProviders"
+          :key="provider.label"
+          type="button"
+          class="social-button"
+          @click="handleSocialLogin(provider.label)"
+        >
+          <span class="social-button__icon">{{ provider.icon }}</span>
+          <span>{{ provider.label }}</span>
+        </button>
+      </div>
+
+      <div v-if="frontendDemoEnabled" class="demo-box">
+        <div class="demo-box__head">
+          <strong>前端测试账号</strong>
+          <el-button plain class="demo-box__button" @click="fillDemoAccount">一键填充</el-button>
         </div>
-
-        <el-form label-position="top" class="auth-form">
-          <el-form-item label="邮箱" prop="email">
-            <el-input v-model="loginForm.email" placeholder="请输入邮箱" class="auth-input" type="email" />
-          </el-form-item>
-
-          <el-form-item label="密码" prop="password">
-            <el-input
-              v-model="loginForm.password"
-              placeholder="请输入密码(6-20个数字或字母)"
-              show-password
-              class="auth-input"
-              type="password"
-              @keyup.enter="hanadleLogin"
-            />
-          </el-form-item>
-
-          <div class="auth-form__meta">
-            <el-link :underline="false" @click="$router.push('/re-password')">忘记密码？</el-link>
-            <span>没有账号？<RouterLink to="/register">去注册</RouterLink></span>
-          </div>
-
-          <el-button type="primary" class="auth-submit" :loading="loading" @click="hanadleLogin">
-            登录并进入工作台
-          </el-button>
-
-          <div v-if="frontendDemoEnabled" class="demo-box">
-            <div class="demo-box__title">前端演示模式</div>
-            <div class="demo-box__line">账号：{{ frontendDemoAccount.email }}</div>
-            <div class="demo-box__line">密码：{{ frontendDemoAccount.password }}</div>
-            <p>仅在 `VITE_ENABLE_FRONTEND_DEMO=true` 时生效，生产构建默认关闭。</p>
-            <el-button plain class="demo-box__button" @click="fillDemoAccount">一键填充演示账号</el-button>
-          </div>
-        </el-form>
-      </section>
-    </div>
+        <div class="demo-box__line">账号：{{ frontendDemoAccount.email }}</div>
+        <div class="demo-box__line">密码：{{ frontendDemoAccount.password }}</div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from "element-plus";
+import { Message, Lock } from "@element-plus/icons-vue";
 import { useLoginLogic } from "../composables/useLoginLogic";
 
 const { loading, hanadleLogin, loginForm, frontendDemoEnabled, frontendDemoAccount } = useLoginLogic();
@@ -78,9 +83,20 @@ const { loading, hanadleLogin, loginForm, frontendDemoEnabled, frontendDemoAccou
 const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta.url).href;
 const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href;
 
+const socialProviders = [
+  { label: "Continue with Google", icon: "G" },
+  { label: "Continue with Facebook", icon: "f" },
+  { label: "Continue with X", icon: "X" },
+  { label: "Continue with Apple", icon: "" },
+];
+
 const fillDemoAccount = () => {
   loginForm.email = frontendDemoAccount.email;
   loginForm.password = frontendDemoAccount.password;
+};
+
+const handleSocialLogin = (provider: string) => {
+  ElMessage.info(`${provider} 暂未接入`);
 };
 </script>
 
@@ -88,7 +104,7 @@ const fillDemoAccount = () => {
 .auth-page {
   position: relative;
   min-height: calc(100vh - var(--header-height));
-  padding: 24px;
+  padding: 32px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,209 +125,190 @@ const fillDemoAccount = () => {
 }
 
 .auth-page__overlay {
-  background:
-    linear-gradient(90deg, rgba(244, 248, 251, 0.95) 0%, rgba(244, 248, 251, 0.75) 42%, rgba(244, 248, 251, 0.18) 100%),
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.18), transparent 35%);
+  background: linear-gradient(90deg, rgba(246, 247, 249, 0.94), rgba(246, 247, 249, 0.82));
 }
 
-.auth-shell {
+.auth-page__headline {
+  position: absolute;
+  top: 12px;
+  right: max(4vw, 20px);
+  font-size: clamp(48px, 8vw, 86px);
+  line-height: 1;
+  color: rgba(24, 24, 27, 0.92);
+  font-family: Georgia, "Times New Roman", serif;
+  pointer-events: none;
+}
+
+.auth-card {
   position: relative;
   z-index: 1;
-  width: min(1160px, 100%);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
-  gap: 24px;
-  align-items: stretch;
+  width: min(420px, 100%);
+  padding: 34px 28px 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
 }
 
-.auth-intro,
-.auth-card {
-  border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  box-shadow: var(--shadow-strong);
-  backdrop-filter: blur(16px);
-}
-
-.auth-intro {
-  padding: 40px;
-  background: rgba(17, 32, 49, 0.82);
-  color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.auth-intro__badge {
-  display: inline-flex;
-  width: fit-content;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(20, 184, 166, 0.14);
-  color: #99f6e4;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.auth-intro h1 {
-  margin-top: 22px;
-  font-size: clamp(34px, 4vw, 54px);
+.auth-card__header h1 {
+  font-size: 36px;
   line-height: 1.05;
-  letter-spacing: -0.05em;
-  max-width: 8ch;
+  margin: 0;
+  color: #18181b;
 }
 
-.auth-intro p {
-  margin-top: 18px;
-  max-width: 580px;
-  color: rgba(248, 250, 252, 0.78);
-  line-height: 1.8;
-}
-
-.auth-highlights {
-  margin-top: 30px;
-  display: grid;
-  gap: 14px;
-}
-
-.auth-highlight {
-  padding: 18px 20px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.auth-highlight strong {
-  display: block;
-  font-size: 18px;
-}
-
-.auth-highlight span {
-  display: block;
+.auth-card__header p {
   margin-top: 8px;
-  color: rgba(248, 250, 252, 0.72);
-  line-height: 1.7;
-}
-
-.auth-card {
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.85);
-}
-
-.auth-card__header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.auth-card__header h2 {
-  font-size: 28px;
-  letter-spacing: -0.03em;
+  color: #808694;
+  font-size: 14px;
 }
 
 .auth-card__header a {
-  color: var(--brand-700);
-  font-weight: 700;
+  color: #4a6cf7;
+  font-weight: 600;
 }
 
-.auth-form :deep(.el-form-item__label) {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-strong);
+.auth-form {
+  margin-top: 24px;
+}
+
+.auth-form :deep(.el-form-item) {
+  margin-bottom: 14px;
 }
 
 .auth-form :deep(.auth-input .el-input__wrapper) {
-  min-height: 48px;
-  border-radius: 14px;
-  background: rgba(244, 248, 251, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(17, 32, 49, 0.08);
+  min-height: 52px;
+  border-radius: 16px;
+  background: #fbfbfc;
+  box-shadow: inset 0 0 0 1px #eceef3;
+  padding: 0 16px;
 }
 
-.auth-form__meta {
+.auth-form :deep(.auth-input .el-input__prefix-inner) {
+  color: #9aa0ad;
+}
+
+.auth-card__meta {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin: 8px 0 20px;
-  color: var(--text-muted);
-  font-size: 14px;
-  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin: 6px 0 18px;
 }
 
-.auth-form__meta a {
-  color: var(--brand-700);
-  font-weight: 700;
+.auth-card__meta :deep(.el-link) {
+  color: #6b7280;
+  font-weight: 600;
 }
 
 .auth-submit {
   width: 100%;
   min-height: 50px;
-  border-radius: 16px;
   border: none;
+  border-radius: 999px;
+  background: #0b0b0c;
+  color: #ffffff;
+  font-size: 16px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--brand-600), var(--accent-500));
-  box-shadow: 0 18px 34px rgba(15, 118, 110, 0.18);
 }
 
-.demo-box {
-  margin-top: 20px;
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(13, 148, 136, 0.08);
-  border: 1px solid rgba(13, 148, 136, 0.16);
+.auth-submit:hover {
+  background: #19191d;
 }
 
-.demo-box__title {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--brand-700);
-  margin-bottom: 10px;
-}
-
-.demo-box__line {
-  color: var(--text-muted);
-  line-height: 1.8;
-}
-
-.demo-box p {
-  margin-top: 10px;
-  color: var(--text-subtle);
-  line-height: 1.7;
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 18px;
+  color: #8b93a3;
   font-size: 13px;
 }
 
-.demo-box__button {
-  margin-top: 12px;
-  border-color: rgba(13, 148, 136, 0.32);
-  color: var(--brand-700);
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e8ebf0;
 }
 
-@media (max-width: 960px) {
-  .auth-shell {
-    grid-template-columns: 1fr;
-  }
+.social-list {
+  display: grid;
+  gap: 12px;
+}
 
-  .auth-intro {
-    min-height: 320px;
-  }
+.social-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid #eceef3;
+  background: #ffffff;
+  color: #20222a;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
 
-  .auth-intro h1 {
-    max-width: none;
-  }
+.social-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.social-button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f4f6fb;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.demo-box {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
+}
+
+.demo-box__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.demo-box__head strong {
+  font-size: 14px;
+  color: #20222a;
+}
+
+.demo-box__button {
+  border-color: #d8dbe3;
+  color: #20222a;
+}
+
+.demo-box__line {
+  color: #6c7383;
+  line-height: 1.8;
+  font-size: 13px;
 }
 
 @media (max-width: 640px) {
   .auth-page {
-    padding: 12px;
+    padding: 20px 12px;
   }
 
-  .auth-intro,
   .auth-card {
-    padding: 22px;
-    border-radius: 24px;
+    padding: 28px 20px 22px;
+    border-radius: 22px;
   }
 }
 </style>

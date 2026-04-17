@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./parrot-frontend/src/assets/images/logo.png" alt="Parrot Sound ReVue Logo" width="180" />
+  <img src="./parrot-frontend/src/assets/images/logo.png" alt="Parrot Sound Logo" width="180" />
   <h1>ParrotSound</h1>
   <p>Open-source AI voice platform for dubbing, voice cloning, and teaching content creation.</p>
   <p>开源 AI 语音平台，聚焦智能配音、声音克隆与教学内容生成。</p>
@@ -18,13 +18,13 @@
 
 ---
 
-![ParrotSoundReVue Demo](./docs/demo/ai-workflow.svg)
+![ParrotSound Demo](./docs/demo/ai-workflow.svg)
 
 ## 中文文档
 
 ### 项目简介
 
-ParrotSoundReVue 是一个全栈 AI 语音产品原型，核心目标不是做静态 UI 演示，而是把大模型能力真实接入到业务闭环中。项目覆盖智能配音、声音克隆、教育教学、社区声音复用、用户历史、通知与帮助反馈等完整流程。
+ParrotSound 是一个全栈 AI 语音产品原型，核心目标不是做静态 UI 演示，而是把大模型能力真实接入到业务闭环中。项目覆盖智能配音、声音克隆、教育教学、社区声音复用、用户历史、通知与帮助反馈等完整流程。
 
 ### 核心能力
 
@@ -255,7 +255,7 @@ ParrotSoundReVue/
 
 ### Overview
 
-ParrotSoundReVue is a full-stack AI voice product prototype built around real product integration instead of isolated demo buttons. It connects AI script generation, dubbing, voice cloning, teaching project creation, community voice reuse, user history, notifications, and feedback into one end-to-end workflow.
+ParrotSound is a full-stack AI voice product prototype built around real product integration instead of isolated demo buttons. It connects AI script generation, dubbing, voice cloning, teaching project creation, community voice reuse, user history, notifications, and feedback into one end-to-end workflow.
 
 ### Core Features
 
@@ -424,7 +424,7 @@ The current version already includes a first round of full-stack performance and
 
 Recommended values for the GitHub `About` panel:
 
-- Description: `ParrotSoundReVue - An open-source AI voice platform for dubbing, voice cloning, and teaching content creation.`
+- Description: `ParrotSound - An open-source AI voice platform for dubbing, voice cloning, and teaching content creation.`
 - Website: `https://github.com/Wanfeng1028/ParrotSoundReVue#readme`
 - Topics: `ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
 

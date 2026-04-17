@@ -22,7 +22,7 @@
   <rect class="bg" width="1280" height="760" rx="36" />
   <rect x="54" y="44" width="1172" height="672" rx="34" class="panel" />
 
-  <text x="86" y="102" class="title">ParrotSoundReVue AI Workflow</text>
+  <text x="86" y="102" class="title">ParrotSound AI Workflow</text>
   <text x="86" y="136" class="subtitle">OpenAI-Compatible models, visible product integration, and real frontend-backend closure.</text>
   <text x="86" y="164" class="subtitle">OpenAI-Compatible 模型接入、显性产品化设计、真实前后端闭环。</text>
 

@@ -1,235 +1,203 @@
 <template>
-    <div class="login-container">
-        <picture>
-            <source :srcset="loginBgWebp" type="image/webp" />
-            <img class="login-signup-bg-img" :src="loginBgPng" alt="Parrot-Login-Bg" fetchpriority="high" />
-        </picture>
-        <div class="gradient-layer"></div>
-       
-        <div class="login-box">
-            <h1 class="login-title-text">开始注册<br>Parrot Sound</h1>
-            <el-form ref="formRef"
-            :model="registerForm"
-            :rules="{}"
-            label-width="80px" 
-            label-position="left"
-            class="custom-form"
-            size="large"
-            >
-            
-                <el-form-item label="邮箱" prop="email">
-                    <el-input placeholder="请输入邮箱" class="custom-input" type="email" v-model="registerForm.email"/>
-                </el-form-item>
+  <div class="auth-page">
+    <picture class="auth-page__bg">
+      <source :srcset="loginBgWebp" type="image/webp" />
+      <img :src="loginBgPng" alt="Parrot Sound register background" fetchpriority="high" />
+    </picture>
+    <div class="auth-page__overlay"></div>
 
-                <el-form-item label="用户名" prop="username">
-                    <el-input placeholder="请输入用户名" class="custom-input" type="text" v-model="registerForm.username"/>
-                </el-form-item>
+    <section class="auth-card auth-card--wide">
+      <div class="auth-card__header">
+        <h1>Create account</h1>
+        <p>Already have an account? <RouterLink to="/login">Sign in</RouterLink></p>
+      </div>
 
-                <el-form-item label="密码" prop="password">
-                    <el-input placeholder="请输入密码(6-20个数字或字母)" show-password class="custom-input" type="password" v-model="registerForm.password"/>
-                </el-form-item>
+      <el-form label-position="top" class="auth-form">
+        <el-form-item prop="email">
+          <el-input v-model="registerForm.email" class="auth-input" type="email" placeholder="Email Address">
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
 
-                <el-form-item label="确认密码" prop="confirmPassword">
-                    <el-input placeholder="请确认密码" show-password class="custom-input" type="password" v-model="registerForm.confirmPassword"/>
-                </el-form-item>
-                
-                <el-form-item label="验证码" prop="code">
-                    <div class="verify-box">
-                    <el-input placeholder="请输入验证码" class="custom-input code-input" type="text" v-model="registerForm.code" />
-                    <el-button type="primary" class="verify-btn" :disabled="isCounting" @click="hanadleSendCode"
-                    >
-                    {{ isCounting ? `${count}秒后重新获取` : '发送验证码' }}
+        <el-form-item prop="username">
+          <el-input v-model="registerForm.username" class="auth-input" placeholder="Username">
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="password">
+          <el-input v-model="registerForm.password" class="auth-input" type="password" show-password placeholder="Password">
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="registerForm.confirmPassword"
+            class="auth-input"
+            type="password"
+            show-password
+            placeholder="Confirm Password"
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="code">
+          <div class="verify-box">
+            <el-input v-model="registerForm.code" class="auth-input code-input" placeholder="Verification Code">
+              <template #prefix>
+                <el-icon><Key /></el-icon>
+              </template>
+            </el-input>
+            <el-button type="primary" class="verify-btn" :disabled="isCounting" @click="hanadleSendCode">
+              {{ isCounting ? `${count}s` : "Send Code" }}
             </el-button>
-                    </div>
-                </el-form-item>
-                <el-button 
-                      type="primary" 
-                      class="login-btn" 
-                      :loading="loading"
-                      @click="hanadleRegiter"
-                >
-                   注 册
-                </el-button>
-                <div class="register-box">
-                    <span>已有账号？</span>
-                    <el-link type="primary" :underline="false" @click="$router.push('/login')">去登录</el-link>
-                </div>
-            </el-form>
-        </div>
+          </div>
+        </el-form-item>
 
-    </div>
-    </template>
+        <el-button type="primary" class="auth-submit" :loading="loading" @click="hanadleRegiter">
+          Create account
+        </el-button>
+      </el-form>
+    </section>
+  </div>
+</template>
 
 <script setup lang="ts">
-//import { ref, reactive } from 'vue'
-    // 删除未使用的 useRouter 导入
-//import { ElMessage } from 'element-plus' // 1. 引入消息提示组件
-import { useRegisterLogic } from '../composables/useRegisterLogic'
-//旧版本的导入方式
-//import loading from 'element-plus/lib/components/loading/index.js';
-//import { ElLoading } from "element-plus";
-import "element-plus/es/components/loading/style/css";
+import { Message, User, Lock, Key } from "@element-plus/icons-vue";
+import { useRegisterLogic } from "../composables/useRegisterLogic";
 
+const { registerForm, isCounting, count, loading, hanadleSendCode, hanadleRegiter } = useRegisterLogic();
 
-//解构出我们需要的所有东西
-const { 
-  registerForm, 
-  isCounting, 
-  count, 
-  loading,
-  hanadleSendCode, 
-  hanadleRegiter 
-} = useRegisterLogic()
-
-const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta.url).href
-const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href
-
+const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta.url).href;
+const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href;
 </script>
 
 <style scoped>
-/* 首页的大背景 */
-.bg-all{ 
-    position: fixed;
-    inset: 0;              /* 等价于 top:0 right:0 bottom:0 left:0 */
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(
-        90deg,
-        rgba(173, 178, 219, 0.81) 0%,
-        rgba(227, 229, 250, 1) 100%
-  );
-    filter: blur(6px);
-    z-index: -1;           /* ✅ 背景永远在最底层 */
-}
-
-.login-container {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center; /* 垂直居中 */
+.auth-page {
   position: relative;
-  overflow: hidden; /* 防止甚至出滚动条 */
+  min-height: calc(100vh - var(--header-height));
+  padding: 32px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-/* 1. 背景图：层级 0 */
-.login-signup-bg-img {
+.auth-page__bg,
+.auth-page__bg img,
+.auth-page__overlay {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
+}
+
+.auth-page__bg img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 0; 
 }
 
-/* 2. 渐变遮罩层：层级 1 */
-.gradient-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 60%; /* 遮住左边 60% 的区域 */
-  height: 100%;
+.auth-page__overlay {
+  background: linear-gradient(90deg, rgba(246, 247, 249, 0.94), rgba(246, 247, 249, 0.82));
+}
+
+.auth-card {
+  position: relative;
   z-index: 1;
-  /* 核心代码：从左边的淡紫色 (rgba 173...) 渐变到右边的完全透明 (rgba ... 0) */
-  background: linear-gradient(
-    to right,
-    rgba(227, 229, 250, 1) 20%,   /* 左边 20% 是纯色 */
-    rgba(227, 229, 250, 0.8) 50%, /* 中间稍微透一点 */
-    rgba(227, 229, 250, 0) 100%   /* 最右边完全透明，露出麦克风 */
-  );
-  /* 如果你想让边缘更柔和，可以加一点 backdrop-filter（可选） */
-  /* backdrop-filter: blur(2px); */
+  width: min(460px, 100%);
+  padding: 34px 28px 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
 }
 
-/* 3. 登录框：层级 2 */
-.login-box {
-  display: flex;
-  flex-direction: column; /* 内容竖着排布 */
-  padding: 40px;
-  position: relative; /* 相对定位，为了让 z-index 生效 */
-  width: 700px;
-  height: 700px;
-  /* 登录框本身可以是白色的，或者是半透明玻璃效果 */
-  background-color: rgba(255, 255, 255, 0.6); 
-  backdrop-filter: blur(10px); /* 毛玻璃效果 */
-  border-radius: 16px; /* 圆角 */
-  z-index: 2; /* 必须比遮罩层高 */
-  margin-left: 10%; /* 距离左边的距离 */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); /* 加点阴影更立体 */
+.auth-card__header h1 {
+  font-size: 34px;
+  line-height: 1.05;
+  margin: 0;
+  color: #18181b;
 }
 
-.login-title-text{
-    font-size: 32px;
-    color: #333;
-    text-align: center;
-    margin-bottom: 40px;
-
-}
-/* 1. 给输入框整容 */
-/* 使用 :deep 穿透修改 Element Plus 内部样式 */
-:deep(.custom-input .el-input__wrapper) {
-  background-color: #e6e8eb; /* 设计图里的浅灰色背景 */
-  box-shadow: none;          /* 去掉默认的灰色边框线 */
-  padding: 10px 15px;        /* 把输入框撑大一点，舒服 */
-  border-radius: 8px;        /* 圆角 */
-}
-
-/* 2. 让“用户名/密码”这两个字变粗 */
-:deep(.el-form-item__label) {
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5px; /* 让标签和输入框之间有点空隙 */
-}
-
-/* 3. 登录按钮：变宽、变高、变色 */
-.login-btn {
-  width: 100%;       /* 占满一行 */
-  height: 48px;      /* 增高 */
-  font-size: 16px;
-  background-color: #5362bc; /* 你的主题紫色 */
-  border: none;      /* 去掉边框 */
-  border-radius: 8px;
-  margin-top: 20px;  /* 距离上面远一点 */
-}
-.login-btn:hover {
-  background-color: #6575d6; /* 鼠标悬停变亮一点 */
-}
-
-/* 4. 调整“忘记密码”的位置 */
-.forgot-pwd-box {
-  text-align: right; /* 靠右对齐 */
-  margin-bottom: 10px;
-}
-
-/* 5. 调整底部“没有账号”的位置 */
-.register-box {
-  margin-top: 15px;
+.auth-card__header p {
+  margin-top: 8px;
+  color: #808694;
   font-size: 14px;
-  color: #666;
 }
-/* 让验证码输入框和按钮横向排列 */
+
+.auth-card__header a {
+  color: #4a6cf7;
+  font-weight: 600;
+}
+
+.auth-form {
+  margin-top: 22px;
+}
+
+.auth-form :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.auth-form :deep(.auth-input .el-input__wrapper) {
+  min-height: 52px;
+  border-radius: 16px;
+  background: #fbfbfc;
+  box-shadow: inset 0 0 0 1px #eceef3;
+  padding: 0 16px;
+}
+
 .verify-box {
   display: flex;
   width: 100%;
-  gap: 10px; /* 按钮和输入框中间留点缝隙 */
+  gap: 12px;
 }
 
-/* 输入框占满剩余空间 */
 .code-input {
   flex: 1;
 }
 
-/* 按钮的样式 */
 .verify-btn {
-  width: 120px; /* 固定按钮宽度，防止倒计时数字变化导致按钮忽大忽小 */
-  background-color: #5362bc;
-  border-color: #5362bc;
-  color: #fff;
-  border-radius: 8px;
+  min-width: 118px;
+  border-radius: 16px;
+  border: none;
+  background: #0b0b0c;
 }
-/* 按钮被禁用时的样式（倒计时中） */
+
 .verify-btn:disabled {
-  background-color: #a0cfff;
-  border-color: #a0cfff;
+  background: #a0a5b1;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  border-radius: 999px;
+  background: #0b0b0c;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    padding: 20px 12px;
+  }
+
+  .auth-card {
+    padding: 28px 20px 22px;
+    border-radius: 22px;
+  }
+
+  .verify-btn {
+    min-width: 102px;
+  }
 }
 </style>

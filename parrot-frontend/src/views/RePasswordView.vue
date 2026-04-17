@@ -1,31 +1,52 @@
 <template>
-  <div class="login-container">
-    <picture>
+  <div class="auth-page">
+    <picture class="auth-page__bg">
       <source :srcset="loginBgWebp" type="image/webp" />
-      <img class="login-signup-bg-img" :src="loginBgPng" alt="Parrot-Login-Bg" fetchpriority="high" />
+      <img :src="loginBgPng" alt="Parrot Sound reset background" fetchpriority="high" />
     </picture>
-    <div class="gradient-layer"></div>
+    <div class="auth-page__overlay"></div>
 
-    <div class="login-box">
-      <h1 class="login-title-text">Parrot Sound<br />重置密码</h1>
-      <el-form label-position="top" class="login-form">
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="formData.email" placeholder="请输入邮箱" class="custom-input" type="email" />
+    <section class="auth-card">
+      <div class="auth-card__header">
+        <h1>Reset password</h1>
+        <p>Remembered it? <RouterLink to="/login">Back to sign in</RouterLink></p>
+      </div>
+
+      <el-form label-position="top" class="auth-form">
+        <el-form-item prop="email">
+          <el-input v-model="formData.email" class="auth-input" type="email" placeholder="Email Address">
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="新密码" prop="password">
-          <el-input v-model="formData.password" placeholder="请输入密码(6-20个数字或字母)" show-password class="custom-input" type="password" />
+
+        <el-form-item prop="password">
+          <el-input v-model="formData.password" class="auth-input" type="password" show-password placeholder="New Password">
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="验证码" prop="code">
+
+        <el-form-item prop="code">
           <div class="verify-box">
-            <el-input v-model="formData.code" placeholder="请输入验证码" class="custom-input code-input" type="text" />
+            <el-input v-model="formData.code" class="auth-input code-input" placeholder="Verification Code">
+              <template #prefix>
+                <el-icon><Key /></el-icon>
+              </template>
+            </el-input>
             <el-button type="primary" class="verify-btn" :disabled="isCounting" @click="sendCode">
-              {{ isCounting ? `${count}秒后重新获取` : "发送验证码" }}
+              {{ isCounting ? `${count}s` : "Send Code" }}
             </el-button>
           </div>
         </el-form-item>
-        <el-button type="primary" class="login-btn" :loading="loading" @click="submit">重置密码</el-button>
+
+        <el-button type="primary" class="auth-submit" :loading="loading" @click="submit">
+          Reset password
+        </el-button>
       </el-form>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -33,6 +54,7 @@
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import { Message, Lock, Key } from "@element-plus/icons-vue";
 import { useAuthStore } from "../stores/auth";
 
 const router = useRouter();
@@ -81,15 +103,121 @@ const submit = async () => {
 </script>
 
 <style scoped>
-.login-container { width: 100vw; height: 100vh; display: flex; align-items: center; position: relative; overflow: hidden; }
-.login-signup-bg-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-.gradient-layer { position: absolute; top: 0; left: 0; width: 60%; height: 100%; z-index: 1; background: linear-gradient(to right, rgba(227,229,250,1) 20%, rgba(227,229,250,0.8) 50%, rgba(227,229,250,0) 100%); }
-.login-box { display: flex; flex-direction: column; padding: 40px; position: relative; width: 700px; height: 500px; background-color: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 16px; z-index: 2; margin-left: 10%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
-.login-title-text { font-size: 32px; color: #333; text-align: center; margin-bottom: 40px; }
-:deep(.custom-input .el-input__wrapper) { background-color: #e6e8eb; box-shadow: none; padding: 10px 15px; border-radius: 8px; }
-:deep(.el-form-item__label) { font-weight: bold; color: #333; }
-.login-btn { width: 100%; height: 48px; font-size: 16px; background-color: #5362bc; border: none; border-radius: 8px; margin-top: 20px; }
-.verify-box { display: flex; gap: 10px; }
-.code-input { flex: 1; }
-.verify-btn { width: 140px; background-color: #5362bc; border-color: #5362bc; border-radius: 8px; }
+.auth-page {
+  position: relative;
+  min-height: calc(100vh - var(--header-height));
+  padding: 32px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.auth-page__bg,
+.auth-page__bg img,
+.auth-page__overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.auth-page__bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-page__overlay {
+  background: linear-gradient(90deg, rgba(246, 247, 249, 0.94), rgba(246, 247, 249, 0.82));
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  padding: 34px 28px 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.auth-card__header h1 {
+  font-size: 34px;
+  line-height: 1.05;
+  margin: 0;
+  color: #18181b;
+}
+
+.auth-card__header p {
+  margin-top: 8px;
+  color: #808694;
+  font-size: 14px;
+}
+
+.auth-card__header a {
+  color: #4a6cf7;
+  font-weight: 600;
+}
+
+.auth-form {
+  margin-top: 22px;
+}
+
+.auth-form :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.auth-form :deep(.auth-input .el-input__wrapper) {
+  min-height: 52px;
+  border-radius: 16px;
+  background: #fbfbfc;
+  box-shadow: inset 0 0 0 1px #eceef3;
+  padding: 0 16px;
+}
+
+.verify-box {
+  display: flex;
+  width: 100%;
+  gap: 12px;
+}
+
+.code-input {
+  flex: 1;
+}
+
+.verify-btn {
+  min-width: 118px;
+  border-radius: 16px;
+  border: none;
+  background: #0b0b0c;
+}
+
+.verify-btn:disabled {
+  background: #a0a5b1;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  border-radius: 999px;
+  background: #0b0b0c;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    padding: 20px 12px;
+  }
+
+  .auth-card {
+    padding: 28px 20px 22px;
+    border-radius: 22px;
+  }
+
+  .verify-btn {
+    min-width: 102px;
+  }
+}
 </style>

@@ -33,7 +33,7 @@ const env = {
     secure: parseBoolean(process.env.SMTP_SECURE, false),
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
-    from: process.env.SMTP_FROM || "Parrot Sound ReVue <noreply@example.com>",
+    from: process.env.SMTP_FROM || "Parrot Sound <noreply@example.com>",
   },
   redisUrl: process.env.REDIS_URL || "",
   mysql: {
