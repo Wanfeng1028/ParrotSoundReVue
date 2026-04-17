@@ -15,10 +15,10 @@
           提供智能配音、声音克隆、教育教学等服务，帮助用户实现语音定制化需求。
         </p>
         <div class="home-banner__actions">
-          <el-button class="home-banner__btn" type="primary" @click="handleStartUsing">
+          <el-button class="home-banner__btn ps-btn ps-btn--primary" type="primary" @click="handleStartUsing">
             开始使用
           </el-button>
-          <el-button class="home-banner__btn home-banner__btn--light" type="default" @click="handleLearnMore">
+          <el-button class="home-banner__btn home-banner__btn--light ps-btn ps-btn--secondary" type="default" @click="handleLearnMore">
             了解更多
           </el-button>
         </div>
@@ -319,20 +319,9 @@ const handleLearnMore = () => {
 
 .home-banner__btn {
   min-width: 160px;
-  height: 56px;
-  padding: 0 28px;
-  border: none;
-  border-radius: 20px;
-  font-size: 16px;
-  font-weight: 700;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
-  background: linear-gradient(135deg, #5aaeff, #2563eb);
 }
 
 .home-banner__btn--light {
-  border: 1px solid #dbe5f3;
-  background: rgba(255, 255, 255, 0.94);
-  color: #445066;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
 }
 

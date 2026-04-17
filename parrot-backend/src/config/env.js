@@ -48,7 +48,18 @@ const env = {
     baseUrl: process.env.AI_BASE_URL || "https://api.openai.com/v1",
     apiKey: process.env.AI_API_KEY || "",
     defaultModel: process.env.AI_DEFAULT_MODEL || "gpt-4o-mini",
-    models: parseList(process.env.AI_MODELS, ["gpt-4o-mini", "gpt-4.1-mini"]),
+    models: parseList(process.env.AI_MODELS, [
+      "gpt-4o-mini",
+      "gpt-4.1-mini",
+      "claude-3-5-sonnet",
+      "gemini-2.5-flash",
+      "grok-2-latest",
+      "deepseek-chat",
+      "deepseek-reasoner",
+      "qwen-plus",
+      "qwen-max",
+      "glm-4-plus",
+    ]),
   },
 };
 

@@ -294,8 +294,12 @@
 }
 
 .demo-box__button {
-  border-color: #d8dbe3;
-  color: #20222a;
+  min-height: 40px;
+  border-radius: 20px;
+  border-color: #dfe6f2;
+  color: #445066;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
 .demo-box__line {

@@ -42,10 +42,10 @@
             <div class="form-group">
               <div class="f-label">使用时间</div>
               <el-radio-group v-model="feedbackForm.usageTime" class="custom-radios">
-                <div class="radio-row"><el-radio value="不到 1 个月" size="large" /></div>
-                <div class="radio-row"><el-radio value="1 - 3 个月左右" size="large" /></div>
-                <div class="radio-row"><el-radio value="3 个月以上 6 个月以内" size="large" /></div>
-                <div class="radio-row"><el-radio value="6 个月及以上" size="large" /></div>
+                <div class="radio-row"><el-radio value="不到 1 个月" size="large">不到 1 个月</el-radio></div>
+                <div class="radio-row"><el-radio value="1 - 3 个月左右" size="large">1 - 3 个月左右</el-radio></div>
+                <div class="radio-row"><el-radio value="3 个月以上 6 个月以内" size="large">3 个月以上 6 个月以内</el-radio></div>
+                <div class="radio-row"><el-radio value="6 个月及以上" size="large">6 个月及以上</el-radio></div>
               </el-radio-group>
             </div>
 
@@ -61,7 +61,7 @@
             </div>
 
             <div class="f-footer">
-              <el-button type="primary" class="submit-btn" @click="submitFeedback">确认提交</el-button>
+              <el-button type="primary" class="submit-btn ps-btn ps-btn--primary" @click="submitFeedback">确认提交</el-button>
             </div>
           </div>
 
@@ -91,8 +91,8 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="tutorialVisible = false">关闭</el-button>
-        <el-button type="primary" @click="goToTutorialTarget">前往对应功能</el-button>
+        <el-button class="ps-btn ps-btn--secondary ps-btn--sm" @click="tutorialVisible = false">关闭</el-button>
+        <el-button type="primary" class="ps-btn ps-btn--primary ps-btn--sm" @click="goToTutorialTarget">前往对应功能</el-button>
       </template>
     </el-dialog>
   </div>
@@ -158,9 +158,11 @@ onMounted(() => {
 .form-group { margin-bottom: 25px; }
 .f-label { font-weight: bold; color: #333; margin-bottom: 15px; }
 .radio-row { margin-bottom: 10px; }
+:deep(.custom-radios) { display: flex; flex-direction: column; gap: 12px; }
+:deep(.custom-radios .el-radio) { margin-right: 0; color: #475569; }
 .f-textarea :deep(.el-textarea__inner) { border: none; border-radius: 8px; padding: 15px; font-size: 14px; }
 .f-footer { display: flex; justify-content: flex-end; }
-.submit-btn { background-color: #5362bc; border-color: #5362bc; padding: 12px 40px; }
+.submit-btn { min-width: 172px; }
 .tutorial-dialog { display: flex; flex-direction: column; gap: 16px; }
 .dialog-summary { font-size: 14px; color: #5d678b; }
 .dialog-content { font-size: 14px; line-height: 1.7; color: #333; background: #f7f8ff; border-radius: 8px; padding: 14px 16px; }

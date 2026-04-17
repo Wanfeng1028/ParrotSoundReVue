@@ -9,7 +9,7 @@
     <div class="toolbar">
       <el-input v-model="searchText" placeholder="输入内容进行搜索" class="gray-search" :prefix-icon="Search" />
       <div class="right-btns">
-        <el-button class="tool-btn" @click="load">刷新</el-button>
+        <el-button class="tool-btn ps-btn ps-btn--secondary ps-btn--sm" @click="load">刷新</el-button>
       </div>
     </div>
 
@@ -105,7 +105,7 @@ onMounted(() => {
 .toolbar { margin-top: 20px; display: flex; justify-content: space-between; }
 .gray-search { width: 240px; }
 :deep(.gray-search .el-input__wrapper) { background-color: #f5f5f5; border-radius: 6px; box-shadow: none; }
-.tool-btn { background: #f5f5f5; border: none; color: #666; font-weight: bold; padding: 10px 15px; }
+.tool-btn { min-width: 88px; }
 .works-grid { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; min-height: 240px; }
 .work-card { width: 180px; }
 .cover-wrapper { width: 180px; height: 180px; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; background: linear-gradient(160deg, #dbe1ff, #aab7ff); }

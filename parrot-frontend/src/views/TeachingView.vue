@@ -1,10 +1,10 @@
 <template>
   <div class="edu-container">
     <div class="left-sidebar">
-      <button type="button" class="mode-switch-btn" @click="toggleTeachingMode">
+      <button type="button" class="mode-switch-btn ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click="toggleTeachingMode">
         {{ teachingMode === "course" ? "AI 课件模式" : "讲解视频模式" }}
       </button>
-      <button type="button" class="import-btn" @click="openImporter">导入 PPT / PDF</button>
+      <button type="button" class="import-btn ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click="openImporter">导入 PPT / PDF</button>
       <input ref="importInputRef" class="hidden-file-input" type="file" multiple accept=".ppt,.pptx,.pdf,image/*" @change="onImportFiles" />
 
       <div class="slide-list">
@@ -25,7 +25,7 @@
         </el-scrollbar>
       </div>
       <div class="add-slide-box" @click="addSlide"><el-icon><Plus /></el-icon></div>
-      <div class="apply-btn" @click="handleSaveCurrentSlide">保存当前页</div>
+      <button type="button" class="apply-btn ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click="handleSaveCurrentSlide">保存当前页</button>
     </div>
 
     <div class="center-area">
@@ -53,15 +53,15 @@
         </div>
         <div class="setting-group">
           <span class="label">模型</span>
-          <el-select v-model="selectedModel" size="small" class="transparent-select" style="width: 160px">
+          <el-select v-model="selectedModel" size="small" class="transparent-select" style="width: 220px">
             <el-option v-for="model in aiModels" :key="model.id" :label="model.label" :value="model.id" />
           </el-select>
         </div>
 
         <div class="right-actions">
-          <el-button class="tool-btn" plain size="small" @click="handleSave()">保存</el-button>
-          <el-button class="tool-btn" plain size="small" @click="generateByAi">AI 帮写</el-button>
-          <el-button type="primary" size="small" class="generate-btn" :loading="loading" @click="handleGenerate">
+          <el-button class="tool-btn ps-btn ps-btn--secondary ps-btn--sm" plain size="small" @click="handleSave()">保存</el-button>
+          <el-button class="tool-btn ps-btn ps-btn--secondary ps-btn--sm" plain size="small" @click="generateByAi">AI 帮写</el-button>
+          <el-button type="primary" size="small" class="generate-btn ps-btn ps-btn--primary ps-btn--sm" :loading="loading" @click="handleGenerate">
             生成视频任务
           </el-button>
         </div>
@@ -91,7 +91,7 @@
             <div class="te-toolbar">
               <el-input v-model="projectTitle" placeholder="输入项目标题" class="ai-input-line" />
               <el-input v-model="aiPrompt" placeholder="输入本节课的主题、受众和讲解目标" class="ai-input-line" />
-              <el-button class="save-play-btn" :loading="loading" @click="generateByAi">AI 讲解稿</el-button>
+              <el-button class="save-play-btn ps-btn ps-btn--primary ps-btn--sm" :loading="loading" @click="generateByAi">AI 讲解稿</el-button>
             </div>
             <el-input
               v-model="textContent"
@@ -103,7 +103,7 @@
             <div class="te-footer">
               <div class="clear-btn">字幕 <el-switch v-model="showSubtitle" size="small" /></div>
               <div class="stats">已保存项目 {{ projects.length }} 个</div>
-              <el-button class="save-play-btn" @click="handleSave()">保存草稿</el-button>
+              <el-button class="save-play-btn ps-btn ps-btn--primary ps-btn--sm" @click="handleSave()">保存草稿</el-button>
             </div>
           </div>
 
@@ -274,8 +274,7 @@ onMounted(() => {
 <style scoped>
 .edu-container { display: flex; height: calc(100vh - 60px); background-color: #f0f2f5; overflow: hidden; }
 .left-sidebar { width: 130px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 12px 8px; gap: 12px; }
-.mode-switch-btn, .apply-btn { border: 1px solid #ddd; border-radius: 4px; padding: 6px 0; text-align: center; font-size: 12px; color: #666; cursor: pointer; background: #fff; }
-.import-btn { border: 1px solid #5362bc; color: #5362bc; font-weight: bold; border-radius: 6px; padding: 8px 0; text-align: center; font-size: 13px; cursor: pointer; background: #fff; }
+.mode-switch-btn, .apply-btn, .import-btn { width: 100%; font-size: 13px; }
 .hidden-file-input { display: none; }
 .slide-list { flex: 1; overflow: hidden; }
 .slide-item { position: relative; width: 100%; aspect-ratio: 16/9; background-color: #eee; border-radius: 6px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
@@ -289,8 +288,7 @@ onMounted(() => {
 .setting-group { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
 :deep(.transparent-select .el-input__wrapper) { box-shadow: none !important; padding: 0 5px; }
 .right-actions { margin-left: auto; display: flex; gap: 10px; }
-.tool-btn { background: #5362bc; color: #fff; border: none; font-weight: bold; }
-.generate-btn { background: #4e5ecd; border-color: #4e5ecd; font-weight: bold; }
+.tool-btn, .generate-btn, .save-play-btn { min-width: 96px; }
 .canvas-wrapper { flex: 1; background-color: #ebedf0; display: flex; align-items: center; justify-content: center; }
 .canvas-box { width: 70%; aspect-ratio: 16/9; background: linear-gradient(160deg, #f7f8ff, #dbe1ff); box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; border-radius: 20px; overflow: hidden; }
 .canvas-title { position: absolute; top: 32px; left: 32px; font-size: 24px; font-weight: 700; color: #4b5ac8; }
@@ -310,7 +308,6 @@ onMounted(() => {
 .te-footer { padding: 10px 20px; border-top: 1px solid #f5f5f5; display: flex; align-items: center; }
 .clear-btn { font-size: 12px; color: #999; display: flex; align-items: center; gap: 8px; }
 .stats { margin-left: auto; font-size: 12px; color: #999; margin-right: 20px; }
-.save-play-btn { background: linear-gradient(90deg, #7c85ad, #5362bc); border: none; color: #fff; border-radius: 6px; padding: 8px 20px; }
 .track-timeline-box { height: 100%; display: flex; flex-direction: column; background: #fff; }
 .timeline-ruler { height: 24px; border-bottom: 1px solid #eee; position: relative; font-size: 10px; color: #999; background: #fcfcfc; padding-left: 40px; }
 .timeline-ruler span { position: absolute; top: 4px; }

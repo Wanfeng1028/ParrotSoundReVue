@@ -42,8 +42,8 @@
           </el-row>
 
           <div class="profile-actions">
-            <el-button type="primary" class="save-btn" @click="saveProfile">保存</el-button>
-            <el-button class="cancel-btn" @click="resetProfile">取消</el-button>
+            <el-button type="primary" class="save-btn ps-btn ps-btn--primary ps-btn--sm" @click="saveProfile">保存</el-button>
+            <el-button class="cancel-btn ps-btn ps-btn--secondary ps-btn--sm" @click="resetProfile">取消</el-button>
           </div>
         </el-form>
       </div>
@@ -78,7 +78,7 @@
               </el-form-item>
 
               <div class="password-actions">
-                <el-button type="primary" class="confirm-btn" @click="savePassword">确认修改密码</el-button>
+                <el-button type="primary" class="confirm-btn ps-btn ps-btn--primary" @click="savePassword">确认修改密码</el-button>
               </div>
             </el-col>
           </el-row>
@@ -176,11 +176,10 @@ onMounted(async () => {
 .profile-form { flex: 1; }
 :deep(.el-form-item__label) { color: #333; font-weight: 500; line-height: 40px; }
 .profile-actions { display: flex; gap: 20px; margin-top: 10px; }
-.save-btn { background-color: #5362bc; border-color: #5362bc; padding: 10px 30px; font-weight: bold; border-radius: 6px; }
-.cancel-btn { background-color: #e6e6e6; border-color: #e6e6e6; color: #666; padding: 10px 30px; font-weight: bold; border-radius: 6px; }
+.save-btn, .cancel-btn { min-width: 108px; }
 .security-section { padding: 0 10px; }
 .sec-subtitle { font-size: 14px; color: #333; margin-bottom: 20px; font-weight: 500; }
 .password-actions { margin-top: 30px; }
-.confirm-btn { width: 100%; height: 44px; background-color: #5362bc; border-color: #5362bc; font-weight: bold; font-size: 15px; border-radius: 6px; }
+.confirm-btn { width: 100%; font-size: 15px; }
 :deep(.custom-gray-input .el-input__wrapper), :deep(.custom-gray-input .el-select__wrapper) { background-color: #e4e4e4; box-shadow: none !important; border-radius: 6px; padding: 0 15px; min-height: 40px; }
 </style>

@@ -1,10 +1,23 @@
 const { env } = require("../config/env");
 
+const modelLabelMap = {
+  "gpt-4o-mini": "OpenAI · gpt-4o-mini",
+  "gpt-4.1-mini": "OpenAI · gpt-4.1-mini",
+  "claude-3-5-sonnet": "Anthropic · claude-3-5-sonnet",
+  "gemini-2.5-flash": "Google · gemini-2.5-flash",
+  "grok-2-latest": "xAI · grok-2-latest",
+  "deepseek-chat": "DeepSeek · deepseek-chat",
+  "deepseek-reasoner": "DeepSeek · deepseek-reasoner",
+  "qwen-plus": "通义千问 · qwen-plus",
+  "qwen-max": "通义千问 · qwen-max",
+  "glm-4-plus": "智谱 · glm-4-plus",
+};
+
 const listModels = () =>
   env.ai.models.map((model) => ({
     id: model,
     provider: env.ai.provider,
-    label: model,
+    label: modelLabelMap[model] || model,
     isDefault: model === env.ai.defaultModel,
   }));
 

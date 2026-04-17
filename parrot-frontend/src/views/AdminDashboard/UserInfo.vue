@@ -24,8 +24,8 @@
              </el-col>
            </el-row>
            <div class="form-actions">
-             <el-button type="primary" class="purple-btn">保存</el-button>
-             <el-button class="gray-btn">取消</el-button>
+             <el-button type="primary" class="purple-btn ps-btn ps-btn--primary ps-btn--sm">保存</el-button>
+             <el-button class="gray-btn ps-btn ps-btn--secondary ps-btn--sm">取消</el-button>
            </div>
         </el-form>
       </div>
@@ -54,7 +54,7 @@
             <el-form-item label="确认新密码">
               <el-input v-model="pwd.new" placeholder="请输入密码 (6-20个数字或字母)" class="gray-input" show-password/>
             </el-form-item>
-            <el-button type="primary" class="purple-btn full-btn">确认修改密码</el-button>
+            <el-button type="primary" class="purple-btn full-btn ps-btn ps-btn--primary">确认修改密码</el-button>
           </el-col>
         </el-row>
       </el-form>
@@ -96,10 +96,7 @@ const pwd = reactive({ q1: '', q2: '', q3: '', old: '', new: '' })
 :deep(.el-form-item__label) { color: #333; font-weight: 500; }
 
 /* 按钮样式 */
-.purple-btn { 
-  background-color: #5362bc; border-color: #5362bc; 
-  padding: 10px 30px; font-weight: bold; border-radius: 6px;
-}
-.gray-btn { background: #eef0f5; border: none; color: #666; padding: 10px 30px; }
-.full-btn { width: 100%; margin-top: 10px; height: 42px; }
+.purple-btn,
+.gray-btn { min-width: 108px; }
+.full-btn { width: 100%; margin-top: 10px; }
 </style>

@@ -7,7 +7,7 @@
       </div>
       <div class="header-actions">
         <el-input v-model="searchText" placeholder="搜索音频内容..." class="custom-search-input" :prefix-icon="Search" />
-        <el-button class="all-btn" @click="loadRecords">刷新</el-button>
+        <el-button class="all-btn ps-btn ps-btn--secondary ps-btn--sm" @click="loadRecords">刷新</el-button>
       </div>
     </div>
 
@@ -22,9 +22,9 @@
             <span class="meta-text align-right">音色 ID: {{ item.voiceId || "-" }}</span>
           </div>
           <div class="action-row">
-            <button class="btn btn-play" @click="playRecord(item)">播放</button>
-            <button class="btn btn-download" @click="downloadRecord(item)">下载</button>
-            <button class="btn btn-delete" @click="removeRecord(item.id)">删除</button>
+            <button class="btn btn-play ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click="playRecord(item)">播放</button>
+            <button class="btn btn-download ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click="downloadRecord(item)">下载</button>
+            <button class="btn btn-delete ps-btn-native ps-btn-native--danger ps-btn-native--sm" @click="removeRecord(item.id)">删除</button>
           </div>
         </div>
       </div>
@@ -58,8 +58,8 @@
         </div>
       </div>
       <div class="player-right">
-        <el-button class="p-btn-white" @click="downloadRecord(currentRecord)">下载</el-button>
-        <el-button class="p-btn-white" @click="currentRecord = null">关闭</el-button>
+        <el-button class="p-btn-white ps-btn ps-btn--secondary ps-btn--sm" @click="downloadRecord(currentRecord)">下载</el-button>
+        <el-button class="p-btn-white ps-btn ps-btn--secondary ps-btn--sm" @click="currentRecord = null">关闭</el-button>
       </div>
     </div>
   </div>
@@ -212,7 +212,7 @@ onMounted(() => {
 .header-actions { display: flex; gap: 15px; }
 .custom-search-input { width: 300px; }
 :deep(.custom-search-input .el-input__wrapper) { background-color: #fff; border-radius: 20px; padding-left: 15px; }
-.all-btn { border-radius: 20px; border: 1px solid #dcdfe6; color: #606266; font-weight: 500; }
+.all-btn { min-width: 88px; }
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 280px; }
 .record-card { background: #fff; border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.03); display: flex; flex-direction: column; height: 220px; }
 .record-card::before { content: ""; position: absolute; left: 0; top: 25px; bottom: 25px; width: 4px; background-color: #5362bc; border-radius: 0 4px 4px 0; }
@@ -223,10 +223,7 @@ onMounted(() => {
 .card-footer { margin-top: auto; }
 .meta-row { display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-bottom: 15px; }
 .action-row { display: flex; gap: 12px; }
-.btn { padding: 6px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; font-weight: 500; }
-.btn-delete { color: #f56c6c; background: #fef0f0; border-color: #fde2e2; }
-.btn-play { color: #5362bc; background: #fff; border-color: #5362bc; }
-.btn-download { color: #67c23a; background: #fff; border-color: #67c23a; }
+.btn { min-width: 88px; }
 .pagination-row { margin-top: 24px; display: flex; justify-content: flex-end; padding-bottom: 12px; }
 .bottom-player { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 999; }
 .player-left { min-width: 200px; }

@@ -26,7 +26,7 @@
           <div class="search-box">
             <el-input v-model="filters.search" placeholder="请输入关键词" class="custom-search" @input="debouncedLoad">
               <template #append>
-                <el-button class="search-btn" @click="load">搜索</el-button>
+                <el-button class="search-btn ps-btn ps-btn--secondary ps-btn--sm" @click="load">搜索</el-button>
               </template>
             </el-input>
           </div>
@@ -58,9 +58,9 @@
               </div>
 
               <div class="action-bar">
-                <el-button type="primary" class="use-btn" @click="useVoice(item.id)">使用声音</el-button>
-                <el-button plain @click="likeVoice(item.id)">点赞</el-button>
-                <el-button plain @click="favoriteVoice(item.id)">收藏</el-button>
+                <el-button type="primary" class="use-btn ps-btn ps-btn--primary ps-btn--sm" @click="useVoice(item.id)">使用声音</el-button>
+                <el-button plain class="ps-btn ps-btn--secondary ps-btn--sm" @click="likeVoice(item.id)">点赞</el-button>
+                <el-button plain class="ps-btn ps-btn--secondary ps-btn--sm" @click="favoriteVoice(item.id)">收藏</el-button>
               </div>
             </div>
 
@@ -154,7 +154,7 @@ onMounted(() => {
 .label { font-size: 14px; color: #333; font-weight: bold; }
 :deep(.custom-select .el-input__wrapper), :deep(.custom-search .el-input__wrapper) { background-color: #f5f5f5; box-shadow: none !important; border-radius: 6px; }
 :deep(.custom-search .el-input-group__append) { background-color: #f5f5f5; box-shadow: none; border-left: none; }
-.search-btn { border: none; background: transparent; color: #666; font-weight: bold; }
+.search-btn { min-width: 76px; }
 .search-box { width: 240px; }
 .content-body { display: flex; gap: 40px; }
 .left-list { flex: 1; display: flex; flex-direction: column; gap: 15px; min-height: 480px; }
@@ -170,7 +170,7 @@ onMounted(() => {
 .play-icon.active { color: #5362bc; }
 .play-wave { font-size: 12px; letter-spacing: 1px; color: #666; }
 .action-bar { display: flex; gap: 10px; }
-.use-btn { width: 100px; background-color: #5362bc; border-color: #5362bc; font-weight: bold; }
+.use-btn { width: 112px; }
 .card-right-stats { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 20px; color: #666; font-size: 13px; }
 .stat-item { display: flex; align-items: center; gap: 4px; }
 .red { color: #f56c6c; }

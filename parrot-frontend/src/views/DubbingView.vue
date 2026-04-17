@@ -14,7 +14,7 @@
         <el-select v-model="selectedModel" class="model-select" placeholder="模型">
           <el-option v-for="model in availableModels" :key="model.id" :label="model.label" :value="model.id" />
         </el-select>
-        <el-button type="primary" class="ai-btn" :loading="generating" @click="handleAIGenerate">
+        <el-button type="primary" class="ai-btn ps-btn ps-btn--primary ps-btn--sm" :loading="generating" @click="handleAIGenerate">
           创作文章
         </el-button>
       </div>
@@ -22,23 +22,23 @@
       <div class="editor-card">
         <div class="toolbar">
           <div class="tools-list">
-            <button type="button" class="tool-btn" @click="handleLiaison">
+            <button type="button" class="tool-btn ps-btn-native ps-btn-native--secondary" @click="handleLiaison">
               <el-icon class="tool-icon-el"><Sort /></el-icon>
               <span>连读</span>
             </button>
-            <button type="button" class="tool-btn" @click="handleInsertPause">
+            <button type="button" class="tool-btn ps-btn-native ps-btn-native--secondary" @click="handleInsertPause">
               <el-icon class="tool-icon-el"><Timer /></el-icon>
               <span>设置停顿</span>
             </button>
-            <button type="button" class="tool-btn" @click="handlePolyphoneAssist">
+            <button type="button" class="tool-btn ps-btn-native ps-btn-native--secondary" @click="handlePolyphoneAssist">
               <el-icon class="tool-icon-el"><ChatDotRound /></el-icon>
               <span>多音字</span>
             </button>
-            <button type="button" class="tool-btn" @click="handleNumberNormalize">
+            <button type="button" class="tool-btn ps-btn-native ps-btn-native--secondary" @click="handleNumberNormalize">
               <el-icon class="tool-icon-el"><PriceTag /></el-icon>
               <span>数字</span>
             </button>
-            <button type="button" class="tool-btn" @click="handlePhraseNormalize">
+            <button type="button" class="tool-btn ps-btn-native ps-btn-native--secondary" @click="handlePhraseNormalize">
               <el-icon class="tool-icon-el"><Collection /></el-icon>
               <span>单词词组</span>
             </button>
@@ -66,15 +66,15 @@
 
         <div class="bottom-actions">
           <div class="action-left">
-            <el-button plain size="small" @click="handleClearText">一键清空</el-button>
-            <el-button plain size="small" @click="handleSmartSegment">智能分段</el-button>
+            <el-button plain size="small" class="ps-btn ps-btn--secondary ps-btn--sm" @click="handleClearText">一键清空</el-button>
+            <el-button plain size="small" class="ps-btn ps-btn--secondary ps-btn--sm" @click="handleSmartSegment">智能分段</el-button>
             <el-tag type="info" class="emotion-indicator" @click="cycleEmotion">
               当前情感：{{ currentEmotion }}
             </el-tag>
           </div>
           <div class="action-right">
-            <el-button class="white-btn" @click="handlePlay">试听</el-button>
-            <el-button class="gradient-btn" @click="handleExport">导出音频</el-button>
+            <el-button class="white-btn ps-btn ps-btn--secondary" @click="handlePlay">试听</el-button>
+            <el-button class="gradient-btn ps-btn ps-btn--primary" @click="handleExport">导出音频</el-button>
           </div>
         </div>
       </div>
@@ -228,13 +228,11 @@ onMounted(() => {
 }
 
 .model-select {
-  width: 180px;
+  width: 240px;
 }
 
 .ai-btn {
-  background: #737b96;
-  border: none;
-  border-radius: 8px;
+  min-width: 120px;
 }
 
 .editor-card {
@@ -266,13 +264,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: pointer;
+  justify-content: center;
+  width: 88px;
+  min-width: 88px;
+  height: 64px;
+  padding: 8px 10px;
   font-size: 12px;
   color: #666;
   gap: 4px;
-  border: none;
-  background: transparent;
-  padding: 0;
 }
 
 .tool-btn:hover {
@@ -359,15 +358,10 @@ onMounted(() => {
 
 .white-btn {
   width: 100px;
-  border-radius: 8px;
 }
 
 .gradient-btn {
   width: 120px;
-  border-radius: 8px;
-  border: none;
-  background: linear-gradient(90deg, #6a709d 0%, #464d7c 100%);
-  color: #fff;
 }
 
 .right-sidebar {

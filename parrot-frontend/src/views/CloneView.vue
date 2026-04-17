@@ -32,7 +32,7 @@
             <div class="form-row mt-15">
               <el-input v-model="formData.tag" placeholder="标签，如：新闻/温柔/播报" class="custom-gray-input flex-input" />
               <el-input v-model="formData.aiPrompt" placeholder="风格提示词" class="custom-gray-input flex-input" />
-              <el-button :loading="aiLoading" @click="fillByAi">AI 生成</el-button>
+              <el-button :loading="aiLoading" class="ps-btn ps-btn--secondary ps-btn--sm" @click="fillByAi">AI 生成</el-button>
             </div>
           </div>
         </div>
@@ -63,8 +63,8 @@
             <div class="sample-status" v-if="sampleName">当前样本：{{ sampleName }}</div>
             <p class="sub-tip">*提示：音频时长最佳为30秒，最短为10秒，最长为45秒</p>
             <div class="footer-actions">
-              <el-button plain @click="previewSample">试听样本</el-button>
-              <el-button class="submit-gradient-btn" :loading="loading" @click="handleSubmit">提 交</el-button>
+              <el-button plain class="ps-btn ps-btn--secondary" @click="previewSample">试听样本</el-button>
+              <el-button class="submit-gradient-btn ps-btn ps-btn--primary" :loading="loading" @click="handleSubmit">提 交</el-button>
             </div>
           </div>
         </div>
@@ -72,7 +72,7 @@
         <div v-else class="mode-wrapper recording-area">
           <div class="back-link" @click="goBack"><el-icon><Back /></el-icon> 返回</div>
           <div class="timer-text">{{ recordTimer }}</div>
-          <el-button type="primary" class="purple-btn stop-btn" @click="stopTimer">
+          <el-button type="primary" class="purple-btn stop-btn ps-btn ps-btn--primary" @click="stopTimer">
             {{ isRecording ? "停止录制" : "已停止" }}
           </el-button>
           <div class="tips-box">
@@ -82,8 +82,8 @@
           <div class="footer-area">
             <div class="sample-status" v-if="sampleName">录音样本：{{ sampleName }}</div>
             <div class="footer-actions">
-              <el-button plain @click="previewSample">试听样本</el-button>
-              <el-button class="submit-gradient-btn" @click="goBack">返回编辑</el-button>
+              <el-button plain class="ps-btn ps-btn--secondary" @click="previewSample">试听样本</el-button>
+              <el-button class="submit-gradient-btn ps-btn ps-btn--primary" @click="goBack">返回编辑</el-button>
             </div>
           </div>
         </div>
@@ -108,7 +108,7 @@
             </div>
           </div>
           <div class="voice-actions">
-            <el-button text size="small" @click="toggleVisibility(item)">切换</el-button>
+            <el-button size="small" class="ps-btn ps-btn--secondary ps-btn--sm" @click="toggleVisibility(item)">切换</el-button>
             <el-icon class="delete-btn" @click="handleDelete(item.id)"><Delete /></el-icon>
           </div>
         </div>
@@ -202,11 +202,11 @@ onMounted(() => {
 .footer-actions { display: flex; gap: 12px; justify-content: center; align-items: center; }
 .sub-tip { font-size: 12px; color: #888; margin-bottom: 20px; }
 .sample-status { font-size: 13px; color: #5362bc; margin-bottom: 12px; font-weight: 600; }
-.submit-gradient-btn { width: 240px; height: 50px; background: linear-gradient(90deg, #6c7293 0%, #3e4466 100%); border: none; border-radius: 8px; color: #fff; font-size: 18px; font-weight: bold; }
+.submit-gradient-btn { width: 240px; font-size: 18px; }
 .recording-area { align-items: center; padding-top: 20px; position: relative; }
 .back-link { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 5px; cursor: pointer; color: #333; font-weight: bold; font-size: 14px; }
 .timer-text { font-size: 80px; font-weight: 700; color: #000; margin-top: 30px; margin-bottom: 20px; font-family: monospace; letter-spacing: 2px; }
-.purple-btn { background-color: #5362bc; border-color: #5362bc; padding: 10px 35px; border-radius: 8px; font-size: 16px; }
+.purple-btn { padding: 0 35px; font-size: 16px; }
 .tips-box { text-align: center; margin-top: 20px; }
 .main-tip { font-size: 14px; color: #333; margin-bottom: 8px; }
 .voice-list-container { display: flex; flex-direction: column; gap: 15px; }

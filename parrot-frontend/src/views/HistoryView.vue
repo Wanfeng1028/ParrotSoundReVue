@@ -4,8 +4,8 @@
       <h1>创作历史中心</h1>
       <p>音频导出、教学生成任务和个人声音模型都会在这里归档。</p>
       <div class="hub-actions">
-        <el-button type="primary" @click="$router.push('/audio-record')">查看音频记录</el-button>
-        <el-button @click="$router.push('/user/history')">查看历史作品</el-button>
+        <el-button type="primary" class="ps-btn ps-btn--primary" @click="$router.push('/audio-record')">查看音频记录</el-button>
+        <el-button class="ps-btn ps-btn--secondary" @click="$router.push('/user/history')">查看历史作品</el-button>
       </div>
     </div>
   </div>

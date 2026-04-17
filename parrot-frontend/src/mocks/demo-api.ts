@@ -36,6 +36,19 @@ type DemoTask = {
 
 const tasks = new Map<string, DemoTask>();
 
+const demoAiModels = [
+  { id: "gpt-4o-mini", label: "OpenAI · gpt-4o-mini", provider: "frontend-demo", isDefault: true },
+  { id: "gpt-4.1-mini", label: "OpenAI · gpt-4.1-mini", provider: "frontend-demo", isDefault: false },
+  { id: "claude-3-5-sonnet", label: "Anthropic · claude-3-5-sonnet", provider: "frontend-demo", isDefault: false },
+  { id: "gemini-2.5-flash", label: "Google · gemini-2.5-flash", provider: "frontend-demo", isDefault: false },
+  { id: "grok-2-latest", label: "xAI · grok-2-latest", provider: "frontend-demo", isDefault: false },
+  { id: "deepseek-chat", label: "DeepSeek · deepseek-chat", provider: "frontend-demo", isDefault: false },
+  { id: "deepseek-reasoner", label: "DeepSeek · deepseek-reasoner", provider: "frontend-demo", isDefault: false },
+  { id: "qwen-plus", label: "通义千问 · qwen-plus", provider: "frontend-demo", isDefault: false },
+  { id: "qwen-max", label: "通义千问 · qwen-max", provider: "frontend-demo", isDefault: false },
+  { id: "glm-4-plus", label: "智谱 · glm-4-plus", provider: "frontend-demo", isDefault: false },
+] as const;
+
 const createTask = (type: string, result: unknown) => {
   const taskId = `demo-task-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   const task: DemoTask = {
@@ -224,11 +237,8 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
     return ok({
       voices,
       emotions: ["默认", "热情", "轻松", "友好", "严肃", "兴奋"],
-      models: [
-        { id: "gpt-4o-mini", label: "gpt-4o-mini", provider: "frontend-demo", isDefault: true },
-        { id: "gpt-4.1-mini", label: "gpt-4.1-mini", provider: "frontend-demo", isDefault: false },
-      ],
-      currentModel: { id: "gpt-4o-mini", label: "gpt-4o-mini", provider: "frontend-demo", isDefault: true },
+      models: demoAiModels,
+      currentModel: demoAiModels[0],
     } as T);
   }
 
@@ -380,10 +390,7 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
   if (path === "/api/teaching/projects" && method === "GET") {
     return ok({
       items: paginate(state.teachingProjects, params),
-      models: [
-        { id: "gpt-4o-mini", label: "gpt-4o-mini", provider: "frontend-demo", isDefault: true },
-        { id: "gpt-4.1-mini", label: "gpt-4.1-mini", provider: "frontend-demo", isDefault: false },
-      ],
+      models: demoAiModels,
     } as T);
   }
 
