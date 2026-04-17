@@ -257,9 +257,9 @@ onBeforeUnmount(() => {
   min-height: 42px;
   padding: 0 20px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--brand-600), var(--accent-500));
+  background: linear-gradient(135deg, #1aa3d8, #2563eb);
   border: none;
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
 }
 
 .app-header__signup:hover {
