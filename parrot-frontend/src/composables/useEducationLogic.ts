@@ -69,6 +69,18 @@ export function useEducationLogic() {
 
   const activeSlide = computed(() => slides.value[activeSlideIndex.value] || slides.value[0]);
 
+  const selectedAvatarName = computed(
+    () => avatarResources.find((item) => item.id === selectedAvatarId.value)?.name || "未选择数字人",
+  );
+
+  const selectedBackgroundName = computed(
+    () => backgroundResources.find((item) => item.id === selectedBackgroundId.value)?.name || "未选择背景",
+  );
+
+  const selectedVoiceName = computed(
+    () => voiceResources.value.find((item) => item.voiceId === selectedVoiceId.value)?.name || "未选择声音",
+  );
+
   watch(
     [projectTitle, textContent],
     () => {
@@ -86,18 +98,6 @@ export function useEducationLogic() {
       slide.voiceName = selectedVoiceName.value;
     },
     { immediate: true },
-  );
-
-  const selectedAvatarName = computed(
-    () => avatarResources.find((item) => item.id === selectedAvatarId.value)?.name || "未选择数字人",
-  );
-
-  const selectedBackgroundName = computed(
-    () => backgroundResources.find((item) => item.id === selectedBackgroundId.value)?.name || "未选择背景",
-  );
-
-  const selectedVoiceName = computed(
-    () => voiceResources.value.find((item) => item.voiceId === selectedVoiceId.value)?.name || "未选择声音",
   );
 
   const filteredResources = computed(() => {

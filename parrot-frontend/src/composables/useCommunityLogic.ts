@@ -36,6 +36,28 @@ export function useCommunityLogic() {
   let currentAudio: HTMLAudioElement | null = null;
   let searchTimer: number | null = null;
 
+  const syncVoiceStats = (voiceId: number, nextStats: VoiceModel["stats"]) => {
+    voiceList.value = voiceList.value.map((item) =>
+      item.id === voiceId
+        ? {
+            ...item,
+            stats: { ...nextStats },
+          }
+        : item,
+    );
+
+    rankList.value = [...rankList.value]
+      .map((item) =>
+        item.id === voiceId
+          ? {
+              ...item,
+              likes: nextStats.like,
+            }
+          : item,
+      )
+      .sort((a, b) => b.likes - a.likes);
+  };
+
   const load = async () => {
     loading.value = true;
     try {
@@ -61,18 +83,6 @@ export function useCommunityLogic() {
     }, 300);
   };
 
-  const updateVoice = (voiceId: number, updater: (voice: CommunityVoice) => void) => {
-    const target = voiceList.value.find((item) => item.id === voiceId);
-    if (target) updater(target);
-  };
-
-  const updateRank = (voiceId: number, likes: number) => {
-    const rankItem = rankList.value.find((item) => item.id === voiceId);
-    if (rankItem) {
-      rankItem.likes = likes;
-    }
-  };
-
   const rememberVoice = (voiceId: number) => {
     localStorage.setItem("preferredCommunityVoiceId", String(voiceId));
   };
@@ -84,9 +94,7 @@ export function useCommunityLogic() {
     }
 
     const response = await playCommunityVoice(voiceId);
-    updateVoice(voiceId, (item) => {
-      item.stats = response.data.stats;
-    });
+    syncVoiceStats(voiceId, response.data.stats);
 
     const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}${audioUrl}`);
     currentAudio = audio;
@@ -104,23 +112,25 @@ export function useCommunityLogic() {
 
   const likeVoice = async (voiceId: number) => {
     const response = await likeCommunityVoice(voiceId);
-    updateVoice(voiceId, (item) => {
-      item.stats = response.data.stats;
-    });
-    updateRank(voiceId, response.data.stats.like);
+    syncVoiceStats(voiceId, response.data.stats);
     ElMessage.success("点赞成功");
   };
 
   const favoriteVoice = async (voiceId: number) => {
     const response = await favoriteCommunityVoice(voiceId);
-    updateVoice(voiceId, (item) => {
-      item.stats = response.data.stats;
-    });
+    syncVoiceStats(voiceId, response.data.stats);
     ElMessage.success("收藏成功");
   };
 
   const useVoice = async (voiceId: number) => {
+    const target = voiceList.value.find((item) => item.id === voiceId);
     await useCommunityVoice(voiceId);
+    if (target) {
+      syncVoiceStats(voiceId, {
+        ...target.stats,
+        use: target.stats.use + 1,
+      });
+    }
     rememberVoice(voiceId);
     ElMessage.success("声音已加入创作流程，正在跳转到智能配音");
     router.push("/dubbing");

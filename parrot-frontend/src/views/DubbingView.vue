@@ -201,7 +201,10 @@ onMounted(() => {
 .dubbing-container {
   display: flex;
   height: calc(100vh - 60px);
-  background-color: #f5f6fa;
+  background:
+    radial-gradient(circle at top left, rgba(117, 190, 255, 0.18), transparent 24%),
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.2), transparent 22%),
+    linear-gradient(180deg, #eef6ff 0%, #e7f0ff 100%);
   padding: 15px;
   gap: 15px;
 }
@@ -236,12 +239,13 @@ onMounted(() => {
 
 .editor-card {
   flex: 1;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .toolbar {
@@ -304,7 +308,7 @@ onMounted(() => {
 .textarea-container {
   flex: 1;
   position: relative;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.82);
 }
 
 :deep(.main-textarea .el-textarea__inner) {
@@ -368,11 +372,12 @@ onMounted(() => {
 
 .right-sidebar {
   width: 320px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.88);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
+  backdrop-filter: blur(10px);
 }
 
 .sidebar-header {
@@ -387,7 +392,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  background: #f9f9f9;
+  background: rgba(239, 246, 255, 0.55);
 }
 
 .voice-item {
