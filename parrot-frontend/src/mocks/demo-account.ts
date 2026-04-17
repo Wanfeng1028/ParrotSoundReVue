@@ -3,7 +3,7 @@ import type { AuthUser } from "../types";
 export const FRONTEND_DEMO_EMAIL = "demo@frontend.local";
 export const FRONTEND_DEMO_PASSWORD = "Demo123456";
 export const FRONTEND_DEMO_TOKEN = "frontend-demo-token";
-export const FRONTEND_DEMO_ENABLED = import.meta.env.VITE_ENABLE_FRONTEND_DEMO === "true";
+export const FRONTEND_DEMO_ENABLED = true;
 const FRONTEND_DEMO_MODE_KEY = "frontendDemoMode";
 const FRONTEND_DEMO_DATA_KEY = "frontendDemoData";
 
