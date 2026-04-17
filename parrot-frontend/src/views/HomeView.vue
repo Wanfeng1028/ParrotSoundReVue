@@ -278,7 +278,7 @@ const handleLearnMore = () => {
 
 .home-banner__content {
   position: absolute;
-  top: 50%;
+  top: 46%;
   left: 12%;
   transform: translateY(-50%);
   max-width: 720px;
