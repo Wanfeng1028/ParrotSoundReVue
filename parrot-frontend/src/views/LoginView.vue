@@ -51,8 +51,6 @@
         <el-button
           v-for="provider in socialProviders"
           :key="provider.label"
-          plain
-          round
           class="social-button"
           :loading="loading && activeProvider === provider.key"
           @click="handleSocialLogin(provider.key, provider.label)"
@@ -99,7 +97,6 @@
               </svg>
             </span>
             <span class="social-button__label">{{ provider.label }}</span>
-            <span class="social-button__placeholder" aria-hidden="true"></span>
           </span>
         </el-button>
       </div>
@@ -151,7 +148,10 @@ const handleSocialLogin = async (provider: SocialProviderKey, label: string) => 
   activeProvider.value = provider;
   try {
     await authStore.loginWithSocialProvider(provider);
-    ElMessage.success(`${label}成功`);
+    ElMessage.success({
+      message: `${label}成功`,
+      grouping: true,
+    });
     router.push("/dubbing");
   } finally {
     activeProvider.value = "";

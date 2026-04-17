@@ -73,11 +73,17 @@ const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.u
 
 const sendCode = async () => {
   if (!formData.email) {
-    ElMessage.warning("请先输入邮箱");
+    ElMessage.warning({
+      message: "请先输入邮箱",
+      grouping: true,
+    });
     return;
   }
   const response = await authStore.requestCode(formData.email);
-  ElMessage.success(response.data.code ? `开发模式验证码：${response.data.code}` : "验证码已发送");
+  ElMessage.success({
+    message: response.data.code ? `开发模式验证码：${response.data.code}` : "验证码已发送",
+    grouping: true,
+  });
   isCounting.value = true;
   count.value = 60;
   const timer = window.setInterval(() => {
@@ -94,7 +100,10 @@ const submit = async () => {
   loading.value = true;
   try {
     await authStore.resetAccountPassword(formData);
-    ElMessage.success("密码已重置，请重新登录");
+    ElMessage.success({
+      message: "密码已重置，请重新登录",
+      grouping: true,
+    });
     router.push("/login");
   } finally {
     loading.value = false;

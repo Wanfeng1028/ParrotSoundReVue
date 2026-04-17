@@ -63,6 +63,38 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
     return ok(state.user as T);
   }
 
+  if (path === "/api/auth/social-login" && method === "POST") {
+    const provider = String(data.provider || "").toLowerCase();
+    const providerNameMap: Record<string, string> = {
+      google: "Google 用户",
+      facebook: "Facebook 用户",
+      microsoft: "Microsoft 用户",
+      x: "X 用户",
+      apple: "Apple 用户",
+    };
+    const providerEmailMap: Record<string, string> = {
+      google: "google.demo@frontend.local",
+      facebook: "facebook.demo@frontend.local",
+      microsoft: "microsoft.demo@frontend.local",
+      x: "x.demo@frontend.local",
+      apple: "apple.demo@frontend.local",
+    };
+    const username = providerNameMap[provider] || "社交登录用户";
+    state.user = {
+      ...createDemoUser(),
+      email: providerEmailMap[provider] || "social.demo@frontend.local",
+      username,
+    };
+    saveDemoState(state);
+    return ok(
+      {
+        token: `frontend-social-${provider || "demo"}-token`,
+        user: state.user,
+      } as T,
+      `${username}登录成功`,
+    );
+  }
+
   if (path === "/api/users/profile" && method === "PUT") {
     if (config.data instanceof FormData) {
       state.user.username = String(config.data.get("username") || state.user.username);

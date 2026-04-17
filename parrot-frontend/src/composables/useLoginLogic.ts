@@ -15,11 +15,17 @@ export const useLoginLogic = () => {
 
   const hanadleLogin = async () => {
     if (!loginForm.email || !loginForm.password) {
-      ElMessage.warning("请填写邮箱和密码");
+      ElMessage.warning({
+        message: "请填写邮箱和密码",
+        grouping: true,
+      });
       return;
     }
     await authStore.loginWithPassword(loginForm);
-    ElMessage.success("登录成功");
+    ElMessage.success({
+      message: "登录成功",
+      grouping: true,
+    });
     const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/dubbing";
     router.push(redirect);
   };

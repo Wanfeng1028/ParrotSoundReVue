@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
 
 .app-header__nav-link.is-active {
   color: #2563eb;
-  background: linear-gradient(135deg, rgba(125, 184, 255, 0.22), rgba(37, 99, 235, 0.18));
+  background: linear-gradient(135deg, rgba(110, 184, 255, 0.24), rgba(37, 99, 235, 0.16));
 }
 
 .app-header__right {
@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
   min-height: 42px;
   padding: 0 20px;
   font-weight: 600;
-  background: linear-gradient(135deg, #1aa3d8, #2563eb);
+  background: linear-gradient(135deg, #5aaeff, #2563eb);
   border: none;
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
 }
@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
 }
 
 .user-dropdown-link:hover {
-  background-color: rgba(240, 253, 250, 0.95);
+  background-color: rgba(239, 246, 255, 0.96);
 }
 
 .user-dropdown-link__copy {

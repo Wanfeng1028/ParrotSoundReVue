@@ -41,9 +41,15 @@ const pwd = ref("");
 
 const handleLogin = () => {
   if (!user.value || !pwd.value) {
-    ElMessage.warning("请输入管理员账号和密码");
+    ElMessage.warning({
+      message: "请输入管理员账号和密码",
+      grouping: true,
+    });
     return;
   }
-  ElMessage.success("管理端登录入口已就绪，后续可接真实接口");
+  ElMessage.success({
+    message: "管理端登录入口已就绪，后续可接真实接口",
+    grouping: true,
+  });
 };
 </script>

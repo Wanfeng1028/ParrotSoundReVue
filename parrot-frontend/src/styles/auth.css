@@ -37,7 +37,7 @@
 .auth-page--plain .auth-page__overlay {
   background:
     radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 32%),
-    radial-gradient(circle at left center, rgba(13, 148, 136, 0.08), transparent 28%);
+    radial-gradient(circle at left center, rgba(96, 165, 250, 0.09), transparent 28%);
 }
 
 .auth-card {
@@ -57,7 +57,7 @@
 .auth-card__header h1 {
   margin: 0;
   text-align: center;
-  background: linear-gradient(135deg, #7db8ff, #2563eb);
+  background: linear-gradient(135deg, #69b3ff, #2563eb);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -87,11 +87,15 @@
 }
 
 .auth-input .el-input__wrapper {
-  min-height: 52px;
-  border-radius: 16px;
+  min-height: 56px;
+  border-radius: 20px;
   background: #fbfbfc;
-  box-shadow: inset 0 0 0 1px #eceef3;
+  box-shadow: inset 0 0 0 1px #dfe6f2;
   padding: 0 16px;
+}
+
+.auth-input .el-input__wrapper.is-focus {
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.48);
 }
 
 .auth-input .el-input__prefix-inner {
@@ -100,7 +104,7 @@
 
 .auth-card__meta {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   margin: 6px 0 18px;
 }
 
@@ -109,21 +113,48 @@
   font-weight: 600;
 }
 
-.auth-submit {
+.auth-submit.el-button,
+.social-button.el-button,
+.verify-btn.el-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.auth-submit.el-button {
   width: 100%;
+  height: 56px;
   min-height: 56px;
+  padding: 0 24px;
   border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #59a9ff, #2563eb);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #5aaeff, #2563eb);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
 }
 
-.auth-submit:hover,
-.auth-submit:focus-visible {
+.auth-submit.el-button:hover,
+.auth-submit.el-button:focus-visible {
   background: linear-gradient(135deg, #4a9efc, #1f56d8);
+  color: #ffffff;
+  border: none;
+}
+
+.auth-submit.el-button {
+  margin: 0;
+}
+
+.auth-submit .el-button__text,
+.verify-btn .el-button__text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  line-height: 1;
 }
 
 .auth-divider {
@@ -145,55 +176,69 @@
 
 .social-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
+  width: 100%;
 }
 
-.social-button {
+.social-list .el-button + .el-button,
+.verify-box .el-button + .el-button {
+  margin-left: 0;
+}
+
+.social-button.el-button {
   width: 100%;
+  height: 56px;
   min-height: 56px;
-  padding: 0 18px;
+  margin: 0;
+  padding: 0 24px;
   justify-content: center;
-  border-radius: 999px;
-  border-color: #eceef3;
+  border-radius: 20px;
+  border: 1px solid #dfe6f2;
   background: #ffffff;
   color: #20222a;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 
-.social-button:hover,
-.social-button:focus-visible {
-  border-color: #d8dde8;
+.social-button.el-button:hover,
+.social-button.el-button:focus-visible {
+  border-color: #dfe6f2;
   background: #ffffff;
   color: #111827;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 
 .social-button__content {
-  display: grid;
-  grid-template-columns: 28px 1fr 28px;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: auto;
+  margin: 0 auto;
+  gap: 14px;
+}
+
+.social-button .el-button__text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  column-gap: 14px;
 }
 
 .social-button__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
+  width: 28px;
   height: 24px;
-  border-radius: 50%;
   flex-shrink: 0;
 }
 
 .social-button__label {
-  text-align: left;
+  display: inline-block;
   font-size: 15px;
+  font-weight: 600;
   color: #445066;
-}
-
-.social-button__placeholder {
-  width: 28px;
-  height: 24px;
+  white-space: nowrap;
 }
 
 .social-button__icon-svg {
@@ -214,13 +259,17 @@
 
 .verify-btn {
   min-width: 118px;
-  border-radius: 16px;
+  height: 56px;
+  padding: 0 18px;
+  border-radius: 20px;
   border: none;
-  background: #0b0b0c;
+  background: linear-gradient(135deg, #5aaeff, #2563eb);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
 }
 
 .verify-btn:disabled {
   background: #a0a5b1;
+  box-shadow: none;
 }
 
 .demo-box {

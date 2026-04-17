@@ -27,14 +27,20 @@ request.interceptors.response.use(
   (response) => {
     const payload = response.data as ApiResponse<unknown>;
     if (payload.code !== 200) {
-      ElMessage.error(payload.msg || "请求失败");
+      ElMessage.error({
+        message: payload.msg || "请求失败",
+        grouping: true,
+      });
       return Promise.reject(new Error(payload.msg || "请求失败"));
     }
     return response;
   },
   (error: AxiosError<{ msg?: string }>) => {
-    const message = error.response?.data?.msg || error.message || "网络请求失败";
-    ElMessage.error(message);
+    const message = error.response?.data?.msg || error.message || "请求失败";
+    ElMessage.error({
+      message,
+      grouping: true,
+    });
     return Promise.reject(error);
   },
 );

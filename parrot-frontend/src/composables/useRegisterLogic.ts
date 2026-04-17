@@ -31,25 +31,35 @@ export const useRegisterLogic = () => {
 
   const hanadleSendCode = async () => {
     if (!registerForm.email) {
-      ElMessage.warning("请输入邮箱地址");
+      ElMessage.warning({
+        message: "请输入邮箱地址",
+        grouping: true,
+      });
       return;
     }
     const response = await authStore.requestCode(registerForm.email);
-    ElMessage.success(
-      response.data.code
+    ElMessage.success({
+      message: response.data.code
         ? `验证码已生成，开发模式验证码：${response.data.code}`
         : "验证码已发送，请查收邮箱",
-    );
+      grouping: true,
+    });
     startCountdown();
   };
 
   const hanadleRegiter = async () => {
     if (!registerForm.email || !registerForm.username || !registerForm.password || !registerForm.code) {
-      ElMessage.warning("请填写完整信息");
+      ElMessage.warning({
+        message: "请填写完整信息",
+        grouping: true,
+      });
       return;
     }
     if (registerForm.password !== registerForm.confirmPassword) {
-      ElMessage.warning("两次输入的密码不一致");
+      ElMessage.warning({
+        message: "两次输入的密码不一致",
+        grouping: true,
+      });
       return;
     }
     await authStore.registerAccount({
@@ -58,7 +68,10 @@ export const useRegisterLogic = () => {
       password: registerForm.password,
       code: registerForm.code,
     });
-    ElMessage.success("注册成功");
+    ElMessage.success({
+      message: "注册成功",
+      grouping: true,
+    });
     router.push("/dubbing");
   };
 
