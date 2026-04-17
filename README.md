@@ -49,13 +49,13 @@
 
 Use the following metadata for the GitHub repository `About` panel.
 <br />
-可以将下面这组内容直接填写到 GitHub 仓库右侧的 `About` 区域。
+可以将下面这组内容直接填写到 GitHub 仓库右侧的 `About` 区域，效果会更接近常见开源项目首页右上角的精简展示风格。
 
 ### Description / 描述
 
-`An open-source AI voice app for dubbing, voice cloning, and teaching content creation.`
+`ParrotSoundReVue - An open-source AI voice platform for dubbing, voice cloning, and teaching content creation.`
 
-`一个开源的 AI 语音应用，聚焦智能配音、声音克隆与教学内容生成。`
+`鹦音坊 - 基于 AI 语音大模型的智能声音处理软件`
 
 ### Website / 网站
 
@@ -63,7 +63,16 @@ Use the following metadata for the GitHub repository `About` panel.
 
 ### Topics / 标签
 
-`ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `speech`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
+`ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
+
+### Suggested GitHub About Layout / 建议的 About 结构
+
+- `Description`:
+  `鹦音坊 - 基于 AI 语音大模型的智能声音处理软件`
+- `Website`:
+  `https://github.com/Wanfeng1028/ParrotSoundReVue#readme`
+- `Topics`:
+  `ai`, `voice-cloning`, `dubbing`, `text-to-speech`, `tts`, `audio`, `education`, `vue3`, `vite`, `express`, `openai-compatible`
 
 ## Key Features / 核心功能
 
