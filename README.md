@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./parrot-frontend/src/assets/images/logo.png" alt="Parrot Sound ReVue Logo" width="180" />
-  <h1>ParrotSoundReVue</h1>
+  <h1>ParrotSound</h1>
   <p>Open-source AI voice platform for dubbing, voice cloning, and teaching content creation.</p>
   <p>开源 AI 语音平台，聚焦智能配音、声音克隆与教学内容生成。</p>
   <p>
