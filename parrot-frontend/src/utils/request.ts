@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { AxiosError, AxiosRequestConfig } from "axios";
 import { ElMessage } from "element-plus";
+import { canHandleDemoRequest, handleDemoRequest } from "../mocks/demo-api";
 
 export interface ApiResponse<T> {
   code: number;
@@ -39,4 +40,6 @@ request.interceptors.response.use(
 );
 
 export const apiRequest = <T>(config: AxiosRequestConfig) =>
-  request(config).then((response) => response.data as ApiResponse<T>);
+  canHandleDemoRequest()
+    ? handleDemoRequest<T>(config)
+    : request(config).then((response) => response.data as ApiResponse<T>);

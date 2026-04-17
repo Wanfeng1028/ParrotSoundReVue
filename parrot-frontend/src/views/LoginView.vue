@@ -23,6 +23,12 @@
                     <span>没有账号？</span>
                     <el-link type="primary" :underline="false" @click="$router.push('/register')">去注册</el-link>
                 </div>
+                <div class="demo-box">
+                    <div class="demo-title">前端测试账号</div>
+                    <div class="demo-line">账号：{{ frontendDemoAccount.email }}</div>
+                    <div class="demo-line">密码：{{ frontendDemoAccount.password }}</div>
+                    <el-button plain class="demo-btn" @click="fillDemoAccount">一键填充测试账号</el-button>
+                </div>
             </el-form>
         </div>
 
@@ -47,8 +53,14 @@ import { useLoginLogic} from '../composables/useLoginLogic'
 const {
   loading,
   hanadleLogin,
-  loginForm
+  loginForm,
+  frontendDemoAccount
 } = useLoginLogic()
+
+const fillDemoAccount = () => {
+  loginForm.email = frontendDemoAccount.email
+  loginForm.password = frontendDemoAccount.password
+}
 </script>
 
 <style scoped>
@@ -171,5 +183,32 @@ const {
   margin-top: 15px;
   font-size: 14px;
   color: #666;
+}
+
+.demo-box {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(83, 98, 188, 0.08);
+  border: 1px solid rgba(83, 98, 188, 0.16);
+}
+
+.demo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4350a9;
+  margin-bottom: 8px;
+}
+
+.demo-line {
+  font-size: 13px;
+  color: #4b4f66;
+  line-height: 1.7;
+}
+
+.demo-btn {
+  margin-top: 10px;
+  border-color: #5362bc;
+  color: #5362bc;
 }
 </style>

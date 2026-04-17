@@ -2,6 +2,15 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { AuthUser } from "../types";
 import { fetchCurrentUser, login, register, resetPassword, sendCodeApi } from "../api/auth";
+import {
+  FRONTEND_DEMO_EMAIL,
+  FRONTEND_DEMO_PASSWORD,
+  FRONTEND_DEMO_TOKEN,
+  getDemoState,
+  isFrontendDemoMode,
+  resetDemoState,
+  setFrontendDemoMode,
+} from "../mocks/demo-account";
 
 export const useAuthStore = defineStore("auth", () => {
   const token = ref(localStorage.getItem("token") || "");
@@ -24,6 +33,10 @@ export const useAuthStore = defineStore("auth", () => {
     if (initialized.value) return;
     initialized.value = true;
     if (!token.value) return;
+    if (isFrontendDemoMode() && token.value === FRONTEND_DEMO_TOKEN) {
+      user.value = getDemoState().user;
+      return;
+    }
     try {
       const response = await fetchCurrentUser();
       user.value = response.data;
@@ -36,6 +49,15 @@ export const useAuthStore = defineStore("auth", () => {
   const loginWithPassword = async (payload: { email: string; password: string }) => {
     loading.value = true;
     try {
+      const email = payload.email.trim().toLowerCase();
+      if (email === FRONTEND_DEMO_EMAIL && payload.password === FRONTEND_DEMO_PASSWORD) {
+        resetDemoState();
+        setFrontendDemoMode(true);
+        setToken(FRONTEND_DEMO_TOKEN);
+        user.value = getDemoState().user;
+        return user.value;
+      }
+      setFrontendDemoMode(false);
       const response = await login(payload);
       setToken(response.data.token);
       user.value = response.data.user;
@@ -72,12 +94,17 @@ export const useAuthStore = defineStore("auth", () => {
 
   const refreshProfile = async () => {
     if (!token.value) return null;
+    if (isFrontendDemoMode() && token.value === FRONTEND_DEMO_TOKEN) {
+      user.value = getDemoState().user;
+      return user.value;
+    }
     const response = await fetchCurrentUser();
     user.value = response.data;
     return response.data;
   };
 
   const logout = () => {
+    setFrontendDemoMode(false);
     setToken("");
     user.value = null;
   };
@@ -94,5 +121,9 @@ export const useAuthStore = defineStore("auth", () => {
     resetAccountPassword,
     refreshProfile,
     logout,
+    frontendDemoAccount: {
+      email: FRONTEND_DEMO_EMAIL,
+      password: FRONTEND_DEMO_PASSWORD,
+    },
   };
 });

@@ -28,5 +28,6 @@ export const useLoginLogic = () => {
     loading: authStore.loading,
     loginForm,
     hanadleLogin,
+    frontendDemoAccount: authStore.frontendDemoAccount,
   };
 };
