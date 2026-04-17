@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.log
+coverage/
+tmp/
+uploads/
+parrot-frontend/node_modules/
+parrot-frontend/dist/
+parrot-backend/node_modules/
+parrot-backend/data/
+parrot-backend/uploads/
