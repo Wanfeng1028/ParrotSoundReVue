@@ -1,145 +1,112 @@
-# ParrotSoundReVue
+<div align="center">
+  <img src="./parrot-frontend/src/assets/images/logo.png" alt="Parrot Sound ReVue Logo" width="180" />
 
-ParrotSoundReVue 是一个面向配音创作、声音克隆、教学课件和社区声音分发的 AI 语音应用。当前仓库采用 MIT 开源协议，前后端同仓维护，重点体现了 AI 大模型在真实业务流程中的接入、切换、失败态处理和落地闭环。
+  <h1>ParrotSoundReVue</h1>
 
-![AI Workflow](./docs/demo/ai-workflow.svg)
+  <p>
+    An open-source AI voice application for dubbing, voice cloning, teaching content generation,
+    and community voice workflows.
+  </p>
 
-## 项目亮点
+  <p>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-4f46e5.svg" alt="MIT License" /></a>
+    <img src="https://img.shields.io/badge/frontend-Vue%203%20%2B%20Vite-22c55e.svg" alt="Vue 3 + Vite" />
+    <img src="https://img.shields.io/badge/backend-Express%20%2B%20Redis%20%2B%20MySQL-2563eb.svg" alt="Express + Redis + MySQL" />
+    <img src="https://img.shields.io/badge/AI-OpenAI%20Compatible-f97316.svg" alt="OpenAI Compatible" />
+    <img src="https://img.shields.io/badge/status-Active%20Development-111827.svg" alt="Active Development" />
+  </p>
 
-- AI 大模型能力显性落地
-  - 智能配音页支持模型选择、AI 文稿生成、试听与导出入库。
-  - 声音克隆页支持 AI 生成模型描述与标签，再进入样本上传和模型创建。
-  - 教育教学页支持 AI 讲解稿生成，并保存为教学任务。
-- 模型扩展设计可部署
-  - 后端采用 OpenAI-Compatible Adapter，支持通过环境变量切换 provider、base URL、API key 和模型列表。
-  - 前端不写死供应商，直接读取可用模型列表并在 UI 中暴露选择器。
-  - 当 API key 未配置时，接口会明确返回配置错误，不伪造 AI 成功结果。
-- 核心业务闭环
-  - 登录注册、验证码、重置密码、用户资料维护。
-  - 声音模型创建、公开/私有切换、社区使用、点赞收藏、历史作品与通知联动。
-  - 音频记录、教学任务、帮助反馈均已接入真实接口。
+  <p>
+    <a href="#key-features">Key Features</a> |
+    <a href="#ai-workflow">AI Workflow</a> |
+    <a href="#quick-start">Quick Start</a> |
+    <a href="#project-structure">Project Structure</a> |
+    <a href="#performance--concurrency">Performance</a> |
+    <a href="#license">License</a>
+  </p>
+</div>
 
-## 技术架构
+---
 
-- 前端
-  - Vue 3
-  - Vite
-  - TypeScript
-  - Element Plus
-  - Pinia
-- 后端
-  - Express
-  - MySQL connector
-  - Redis connector
-  - JWT Auth
-  - Multer 文件上传
-- AI 接入
-  - OpenAI-Compatible Chat Completions Adapter
-  - 通过 `.env` 配置模型列表和默认模型
+![ParrotSoundReVue Demo](./docs/demo/ai-workflow.svg)
 
-## 仓库结构
+## Overview
 
-```text
-ParrotSoundReVue/
-├─ docs/
-│  └─ demo/
-│     └─ ai-workflow.svg
-├─ parrot-backend/
-│  ├─ src/
-│  │  ├─ config/
-│  │  ├─ middleware/
-│  │  ├─ routes/
-│  │  ├─ services/
-│  │  └─ utils/
-│  ├─ .env.example
-│  └─ server.js
-├─ parrot-frontend/
-│  ├─ src/
-│  │  ├─ api/
-│  │  ├─ components/
-│  │  ├─ composables/
-│  │  ├─ router/
-│  │  ├─ stores/
-│  │  ├─ types/
-│  │  └─ views/
-│  └─ .env.example
-├─ LICENSE
-└─ README.md
-```
+ParrotSoundReVue is a full-stack AI product prototype focused on real business integration of large models rather than isolated demo buttons. It connects AI draft generation, dubbing, voice cloning, teaching project generation, user history, notifications, and community voice distribution into one end-to-end workflow.
 
-## 已完成功能
+This repository is open source under the MIT license and keeps the frontend and backend in one monorepo:
 
-### 1. 认证与用户系统
+- `parrot-frontend`: `Vue 3 + Vite + TypeScript + Element Plus`
+- `parrot-backend`: `Express + Redis adapter + MySQL adapter + JWT`
+- AI integration: OpenAI-compatible model adapter with configurable provider and model list
 
-- 邮箱验证码发送
-- 注册 / 登录 / 重置密码
-- JWT 登录态恢复
-- 用户资料更新与头像上传
-- 密保校验后修改密码
-- 历史作品、互动信息、通知中心
+## Key Features
 
-### 2. 智能配音
+### 1. AI Dubbing
 
-- 模型选择
-- AI 文稿生成
-- 声音选择、情感参数调整
-- 试听任务创建
-- 导出音频并写入音频记录
+- Select models directly in the dubbing UI.
+- Generate dubbing scripts from prompts with async task polling.
+- Preview and export audio through task-based APIs.
+- Automatically write completed outputs into audio history.
 
-### 3. 声音克隆
+### 2. Voice Cloning
 
-- 封面上传
-- 音频样本上传
-- AI 自动生成模型描述与标签
-- 创建个人声音模型
-- 公开 / 私有切换
-- 删除声音模型
+- Upload or record voice samples.
+- Generate model description and tag suggestions with AI.
+- Create private/public voice models.
+- Reuse created voices in dubbing, teaching, and community flows.
 
-### 4. 社区与反馈
+### 3. Teaching Workflow
 
-- 社区声音检索
-- 排序、语言筛选
-- 点赞、收藏、使用声音
-- 榜单展示
-- 帮助教程
-- 用户反馈提交
+- Create teaching projects with slides, scripts, speaker, voice, and background.
+- Generate teaching narration with AI.
+- Submit video-generation-style tasks asynchronously.
+- Sync completed teaching jobs into history records.
 
-### 5. 教育教学 MVP
+### 4. Community Voice Library
 
-- 教学项目保存
-- AI 生成讲解稿
-- 模型选择
-- 生成教学任务并进入历史
+- Search, filter, and paginate public voices.
+- Like, favorite, preview, and reuse community voices.
+- Send selected voices back into the dubbing workflow.
+- Maintain ranking boards with cached hot data.
 
-## AI 大模型应用设计
+### 5. User System
 
-### 前端设计
+- Register, login, reset password, and restore JWT session.
+- Update profile and avatar.
+- View paginated history, interactions, and notifications.
+- Support a frontend-only demo account for UI acceptance.
 
-- 智能配音页顶部提供模型下拉选择器。
-- 教学页顶部提供模型选择与 AI 帮写入口。
-- 声音克隆页提供 AI 描述生成按钮。
-- 所有 AI 入口都和业务实体绑定，不是独立演示按钮。
+## AI Workflow
 
-### 后端设计
+The AI capability in this project is visible in the product, not hidden behind backend placeholders.
 
-- 统一适配器位于 `parrot-backend/src/services/ai-service.js`
-- 当前兼容 OpenAI `chat/completions` 风格接口
-- 环境变量控制：
+### Implemented AI Entry Points
+
+- Dubbing page: prompt -> model selection -> script generation -> preview/export task
+- Voice clone page: prompt -> AI description/tag suggestion -> model creation
+- Teaching page: prompt -> model selection -> teaching script generation -> generation task
+
+### Model Adapter Design
+
+- Backend adapter file: `parrot-backend/src/services/ai-service.js`
+- Protocol: OpenAI-compatible `chat/completions`
+- Runtime configuration:
   - `AI_PROVIDER`
   - `AI_BASE_URL`
   - `AI_API_KEY`
   - `AI_DEFAULT_MODEL`
   - `AI_MODELS`
 
-### 当前落地场景
+### Failure Handling
 
-- 配音文案生成
-- 声音模型标签/描述生成
-- 教学讲解稿生成
+- If no API key is configured, the backend returns explicit configuration errors.
+- AI-heavy flows are now task-based, which prevents the web process from blocking on heavy operations.
+- Frontend polls task status through `/api/tasks/:taskId`.
 
-## 本地运行
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 cd parrot-backend
@@ -149,124 +116,193 @@ cd ../parrot-frontend
 npm install
 ```
 
-### 2. 配置环境变量
+### 2. Configure Environment Variables
 
-后端：
+Backend:
 
 ```bash
 cd parrot-backend
 cp .env.example .env
 ```
 
-前端：
+Frontend:
 
 ```bash
 cd parrot-frontend
 cp .env.example .env
 ```
 
-### 3. 启动后端
+### 3. Start Backend
 
 ```bash
 cd parrot-backend
 npm start
 ```
 
-### 4. 启动前端
+### 4. Start Frontend
 
 ```bash
 cd parrot-frontend
 npm run dev
 ```
 
-默认地址：
+Default local addresses:
 
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:3000`
 
-## 环境变量说明
+## Frontend Demo Account
 
-### 前端
+For pure frontend acceptance without backend dependency:
 
-| 变量 | 说明 |
+- Email: `demo@frontend.local`
+- Password: `Demo123456`
+
+This account uses browser-side mock data but follows the same paginated and task-based API structure as the real frontend.
+
+## Project Structure
+
+```text
+ParrotSoundReVue/
+|-- docs/
+|   `-- demo/
+|       `-- ai-workflow.svg
+|-- parrot-backend/
+|   |-- src/
+|   |   |-- config/
+|   |   |-- middleware/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   `-- utils/
+|   `-- .env.example
+|-- parrot-frontend/
+|   |-- src/
+|   |   |-- api/
+|   |   |-- assets/
+|   |   |-- composables/
+|   |   |-- mocks/
+|   |   |-- router/
+|   |   |-- stores/
+|   |   |-- types/
+|   |   `-- views/
+|   `-- .env.example
+|-- LICENSE
+`-- README.md
+```
+
+## Performance & Concurrency
+
+This project now includes a first round of real optimization work.
+
+### Frontend Optimization
+
+- Route-level lazy loading
+- Element Plus auto-import and component-level loading
+- Vite manual chunk splitting
+- `webp`-based large image optimization
+- Debounced search for list-heavy pages
+- Paginated rendering for community, history, notification, interaction, record, and teaching pages
+
+### Backend Optimization
+
+- Gzip compression middleware
+- Request logging with timing and cache-hit markers
+- Cache abstraction with Redis fallback to in-memory TTL cache
+- Paginated list APIs
+- Static file cache headers for `/uploads`
+- In-memory state cache and delayed flush for file-store fallback
+
+### High-Concurrency Design
+
+- Stateless JWT-based auth path
+- Async task queue for AI generation and export-heavy flows
+- `/api/tasks/:taskId` polling interface
+- Rate limiting for auth, AI, export, feedback, and interaction endpoints
+- MySQL pool configuration prepared for higher concurrency deployment
+- Redis-ready cache and counter design for multi-instance deployment
+
+## Public API Conventions
+
+### Paginated Responses
+
+List interfaces now follow:
+
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "pageSize": 12
+}
+```
+
+### Task Responses
+
+Async interfaces now follow:
+
+```json
+{
+  "taskId": "xxx",
+  "status": "queued"
+}
+```
+
+Task status polling:
+
+```json
+{
+  "taskId": "xxx",
+  "status": "completed",
+  "progress": 100,
+  "result": {}
+}
+```
+
+## Environment Variables
+
+### Frontend
+
+| Variable | Description |
 | --- | --- |
-| `VITE_API_BASE_URL` | 后端 API 基础地址 |
+| `VITE_API_BASE_URL` | Backend API base URL |
 
-### 后端
+### Backend
 
-| 变量 | 说明 |
+| Variable | Description |
 | --- | --- |
-| `PORT` | 后端端口 |
-| `FRONTEND_ORIGIN` | 前端地址，用于 CORS |
-| `JWT_SECRET` | JWT 密钥 |
-| `DATA_DIR` | 本地数据目录 |
-| `UPLOAD_DIR` | 上传目录 |
-| `SMTP_*` | 邮箱验证码服务 |
-| `REDIS_URL` | Redis 连接地址 |
-| `MYSQL_*` | MySQL 连接配置 |
-| `AI_PROVIDER` | AI 供应商标识 |
-| `AI_BASE_URL` | OpenAI-Compatible API 地址 |
-| `AI_API_KEY` | AI 接口密钥 |
-| `AI_DEFAULT_MODEL` | 默认模型 |
-| `AI_MODELS` | 前端可选模型列表 |
+| `PORT` | Backend port |
+| `FRONTEND_ORIGIN` | Frontend origin for CORS |
+| `JWT_SECRET` | JWT secret |
+| `DATA_DIR` | Local data directory |
+| `UPLOAD_DIR` | Upload directory |
+| `REQUEST_LOG_SLOW_MS` | Slow-request threshold |
+| `CACHE_TTL_SECONDS` | Default cache TTL |
+| `QUEUE_CONCURRENCY` | Async task concurrency |
+| `SMTP_*` | Verification code email service |
+| `REDIS_URL` | Redis connection string |
+| `MYSQL_*` | MySQL connection config |
+| `AI_PROVIDER` | AI provider name |
+| `AI_BASE_URL` | OpenAI-compatible API base URL |
+| `AI_API_KEY` | AI API key |
+| `AI_DEFAULT_MODEL` | Default AI model |
+| `AI_MODELS` | Comma-separated available models |
 
-## 数据与部署说明
+## Validation
 
-- 当前默认本地开发模式使用文件持久化，零配置即可跑通主要功能。
-- Redis 已接入缓存抽象，配置 `REDIS_URL` 后会自动切换为 Redis。
-- MySQL 连接已预留，配置完整后会进入数据库连接模式；当前示例数据与业务流在本地文件库中可直接运行。
+Completed local validation for the current version:
 
-## 数据库初始化
+- Frontend production build: `npm run build`
+- Backend app load smoke test: `node -e "require('./src/app')"`
 
-当前版本的开箱即用初始化采用文件数据种子。首次启动后端时，会自动创建：
+## License
 
-- 用户数据
-- 社区声音数据
-- 音频记录
-- 通知中心数据
-- 教学项目示例
+This project is released under the [MIT License](./LICENSE).
 
-如果你要接入 MySQL，建议先按以下实体建表再迁移：
+## Credits
 
-- `users`
-- `voices`
-- `jobs`
-- `interactions`
-- `notifications`
-- `feedbacks`
-- `teaching_projects`
+Designed and implemented around an AI-first product workflow, with emphasis on:
 
-## 页面预览
-
-### AI 大模型落地流程动图
-
-- 智能配音：模型选择 -> AI 文稿生成 -> 试听/导出
-- 声音克隆：提示词 -> AI 标签/描述 -> 创建模型
-- 教学页：模型选择 -> 讲解稿生成 -> 生成教学任务
-
-README 顶部展示的动画 SVG 已覆盖这三条主流程。
-
-## 构建与验证
-
-已完成本地验证：
-
-- 前端 `npm run build`
-- 后端健康检查 `/api/ping`
-
-## 开源协议
-
-本项目采用 [MIT License](./LICENSE)。
-
-## 常见问题
-
-### 1. 为什么 AI 生成失败？
-
-通常是因为没有配置 `AI_API_KEY`，后端会直接返回明确错误，不会伪造成功结果。
-
-### 2. 为什么验证码接口会直接返回验证码？
-
-如果没有配置 SMTP，系统会进入开发模式，便于本地联调。
-
-### 3. 为什么默认没有强制要求 MySQL 和 Redis？
-
-为了保证开箱即用。当前仓库仍然保留了 MySQL / Redis 接入层，部署时可以直接接入真实基础设施。
+- visible large-model integration in the UI
+- full frontend-backend feature closure
+- deployable OpenAI-compatible model extension
+- practical performance and concurrency improvements
