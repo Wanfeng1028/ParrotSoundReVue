@@ -70,6 +70,12 @@ router.post("/voices/:id/like", (req, res) => {
   return res.json(ok(voice, "点赞成功"));
 });
 
+router.post("/voices/:id/play", (req, res) => {
+  const voice = mutateVoiceStat(req.params.id, "play");
+  if (!voice) return fail(res, 404, "声音不存在", 404);
+  return res.json(ok(voice, "试听次数已更新"));
+});
+
 router.post("/voices/:id/favorite", (req, res) => {
   const voice = mutateVoiceStat(req.params.id, "favorite");
   if (!voice) return fail(res, 404, "声音不存在", 404);

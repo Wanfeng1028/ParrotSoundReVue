@@ -246,26 +246,29 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
     return ok(items as T);
   }
 
-  if (/^\/api\/community\/voices\/\d+\/(like|favorite|use)$/.test(path) && method === "POST") {
+  if (/^\/api\/community\/voices\/\d+\/(play|like|favorite|use)$/.test(path) && method === "POST") {
     const voiceId = Number(path.split("/")[4]);
     const action = path.split("/")[5];
     const voice = state.voices.find((item) => item.id === voiceId);
     if (voice) {
+      if (action === "play") voice.stats.play += 1;
       if (action === "like") voice.stats.like += 1;
       if (action === "favorite") voice.stats.favorite += 1;
       if (action === "use") voice.stats.use += 1;
-      state.interactions.unshift({
-        id: state.nextIds.interaction++,
-        type: action === "favorite" ? "favorite" : action === "like" ? "like" : "use",
-        actorName: "Frontend Demo",
-        actorAvatar: "",
-        voiceName: voice.name,
-        voiceCover: voice.coverUrl,
-        createdAt: new Date().toISOString(),
-      });
+      if (action !== "play") {
+        state.interactions.unshift({
+          id: state.nextIds.interaction++,
+          type: action === "favorite" ? "favorite" : action === "like" ? "like" : "use",
+          actorName: "Frontend Demo",
+          actorAvatar: "",
+          voiceName: voice.name,
+          voiceCover: voice.coverUrl,
+          createdAt: new Date().toISOString(),
+        });
+      }
       saveDemoState(state);
     }
-    return ok((action === "use" ? { voiceId } : voice) as T, action === "use" ? "已加入创作流程" : "操作成功");
+    return ok((action === "use" ? { voiceId } : voice) as T, action === "use" ? "已加入创作流程" : action === "play" ? "试听次数已更新" : "操作成功");
   }
 
   if (path === "/api/help/tutorials" && method === "GET") {
@@ -307,6 +310,13 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
       subtitleEnabled: data.subtitleEnabled !== false,
       voiceId: Number(data.voiceId || 1),
       status: String(data.status || "draft"),
+      mode: (String(data.mode || "course") === "video" ? "video" : "course") as "course" | "video",
+      speakerId: String(data.speakerId || "avatar-teacher"),
+      speakerName: String(data.speakerName || "讲师数字人"),
+      backgroundId: String(data.backgroundId || "bg-gradient"),
+      backgroundName: String(data.backgroundName || "渐变演示背景"),
+      voiceName: String(data.voiceName || "前端演示音色"),
+      slides: Array.isArray(data.slides) ? data.slides : [],
       createdAt,
       updatedAt: createdAt,
     };

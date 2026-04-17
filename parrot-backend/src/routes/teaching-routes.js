@@ -29,6 +29,13 @@ router.post("/projects", (req, res) => {
     subtitleEnabled: req.body.subtitleEnabled !== false,
     voiceId: req.body.voiceId || null,
     status: req.body.status || "draft",
+    mode: req.body.mode || "course",
+    speakerId: req.body.speakerId || "",
+    speakerName: req.body.speakerName || "",
+    backgroundId: req.body.backgroundId || "",
+    backgroundName: req.body.backgroundName || "",
+    voiceName: req.body.voiceName || "",
+    slides: Array.isArray(req.body.slides) ? req.body.slides : [],
   });
   if (req.body.status === "completed") {
     repository.createJob({

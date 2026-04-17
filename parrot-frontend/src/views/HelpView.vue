@@ -27,7 +27,7 @@
 
         <div class="content-area">
           <div v-if="activeTab !== 'feedback'" class="video-grid">
-            <div class="video-item" v-for="video in videoList" :key="video.id">
+            <div class="video-item" v-for="video in videoList" :key="video.id" @click="openTutorial(video)">
               <div class="video-thumb">
                 <el-icon class="play-btn"><CaretRight /></el-icon>
                 <div class="duration">{{ video.duration }}</div>
@@ -66,6 +66,23 @@
         </div>
       </div>
     </div>
+
+    <el-dialog v-model="tutorialVisible" width="620px" :title="currentTutorial?.title || '教程详情'">
+      <div v-if="currentTutorial" class="tutorial-dialog">
+        <div class="dialog-summary">{{ currentTutorial.summary }}</div>
+        <div class="dialog-content">{{ currentTutorial.content || "本教程会带你快速完成该功能的关键流程。" }}</div>
+        <div class="dialog-steps">
+          <div class="step-item" v-for="(step, index) in currentTutorial.steps || []" :key="`${currentTutorial.id}-${index}`">
+            <span class="step-index">{{ index + 1 }}</span>
+            <span>{{ step }}</span>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="tutorialVisible = false">关闭</el-button>
+        <el-button type="primary" @click="goToTutorialTarget">前往对应功能</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -74,7 +91,8 @@ import { computed, onMounted } from "vue";
 import { Compass, Microphone, CopyDocument, Monitor, EditPen, CaretRight } from "@element-plus/icons-vue";
 import { useHelpLogic } from "../composables/useHelpLogic";
 
-const { activeTab, feedbackForm, videoList, switchTab, submitFeedback } = useHelpLogic();
+const { activeTab, feedbackForm, videoList, tutorialVisible, currentTutorial, switchTab, openTutorial, goToTutorialTarget, submitFeedback } =
+  useHelpLogic();
 
 const pageTitle = computed(() => {
   const map: Record<string, string> = {
@@ -117,4 +135,10 @@ onMounted(() => {
 .f-textarea :deep(.el-textarea__inner) { border: none; border-radius: 8px; padding: 15px; font-size: 14px; }
 .f-footer { display: flex; justify-content: flex-end; }
 .submit-btn { background-color: #5362bc; border-color: #5362bc; padding: 12px 40px; }
+.tutorial-dialog { display: flex; flex-direction: column; gap: 16px; }
+.dialog-summary { font-size: 14px; color: #5d678b; }
+.dialog-content { font-size: 14px; line-height: 1.7; color: #333; background: #f7f8ff; border-radius: 8px; padding: 14px 16px; }
+.dialog-steps { display: flex; flex-direction: column; gap: 10px; }
+.step-item { display: flex; gap: 10px; align-items: flex-start; }
+.step-index { width: 22px; height: 22px; border-radius: 50%; background: #5865f2; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
 </style>

@@ -154,6 +154,13 @@ const saveTeachingProject = (project) =>
       subtitleEnabled: project.subtitleEnabled,
       voiceId: project.voiceId || null,
       status: project.status || "draft",
+      mode: project.mode || "course",
+      speakerId: project.speakerId || "",
+      speakerName: project.speakerName || "",
+      backgroundId: project.backgroundId || "",
+      backgroundName: project.backgroundName || "",
+      voiceName: project.voiceName || "",
+      slides: project.slides || [],
       createdAt: nowIso(),
       updatedAt: nowIso(),
     });

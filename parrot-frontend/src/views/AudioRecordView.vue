@@ -36,10 +36,12 @@
         <div class="p-voice">音色: {{ currentRecord.voiceId || "默认" }}</div>
       </div>
       <div class="player-center">
-        <div class="play-circle-btn" @click="playRecord(currentRecord)"><el-icon><VideoPlay /></el-icon></div>
+        <div class="play-circle-btn" @click="togglePlayer">
+          <el-icon><VideoPlay /></el-icon>
+        </div>
         <div class="progress-wrapper">
-          <el-slider v-model="playProgress" :show-tooltip="false" class="purple-slider" />
-          <span class="time-label">{{ currentRecord.status }}</span>
+          <el-slider v-model="playProgress" :show-tooltip="false" class="purple-slider" @input="seekRecord" />
+          <span class="time-label">{{ playerTimeLabel }}</span>
         </div>
       </div>
       <div class="player-right">
@@ -51,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { Search, VideoPlay } from "@element-plus/icons-vue";
 import { deleteAudioRecord, fetchAudioRecords } from "../api/dubbing";
@@ -62,8 +64,11 @@ const playProgress = ref(0);
 const loading = ref(false);
 const recordList = ref<DubbingJob[]>([]);
 const currentRecord = ref<DubbingJob | null>(null);
+const playerDuration = ref(0);
+const isPlaying = ref(false);
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+let audioPlayer: HTMLAudioElement | null = null;
 
 const loadRecords = async () => {
   loading.value = true;
@@ -77,10 +82,51 @@ const loadRecords = async () => {
 
 const playRecord = (item: DubbingJob) => {
   currentRecord.value = item;
-  const audio = new Audio(`${baseUrl}${item.audioUrl}`);
-  audio.play().catch(() => {
+  if (audioPlayer) {
+    audioPlayer.pause();
+  }
+  audioPlayer = new Audio(`${baseUrl}${item.audioUrl}`);
+  audioPlayer.ontimeupdate = () => {
+    if (!audioPlayer) return;
+    const duration = audioPlayer.duration || 0;
+    playerDuration.value = duration;
+    playProgress.value = duration ? Math.round((audioPlayer.currentTime / duration) * 100) : 0;
+  };
+  audioPlayer.onended = () => {
+    isPlaying.value = false;
+    playProgress.value = 100;
+  };
+  audioPlayer.play().then(() => {
+    isPlaying.value = true;
+  }).catch(() => {
+    isPlaying.value = false;
     ElMessage.warning("音频暂时无法播放");
   });
+};
+
+const togglePlayer = () => {
+  if (!audioPlayer || !currentRecord.value) {
+    return;
+  }
+
+  if (audioPlayer.paused) {
+    audioPlayer.play().then(() => {
+      isPlaying.value = true;
+    }).catch(() => {
+      ElMessage.warning("音频暂时无法播放");
+    });
+    return;
+  }
+
+  audioPlayer.pause();
+  isPlaying.value = false;
+};
+
+const seekRecord = (value: number | number[]) => {
+  if (!audioPlayer || Array.isArray(value) || !playerDuration.value) {
+    return;
+  }
+  audioPlayer.currentTime = (value / 100) * playerDuration.value;
 };
 
 const downloadRecord = (item: DubbingJob) => {
@@ -90,14 +136,37 @@ const downloadRecord = (item: DubbingJob) => {
 const removeRecord = async (id: number) => {
   await deleteAudioRecord(id);
   recordList.value = recordList.value.filter((item) => item.id !== id);
-  if (currentRecord.value?.id === id) currentRecord.value = null;
+  if (currentRecord.value?.id === id) {
+    currentRecord.value = null;
+    audioPlayer?.pause();
+    audioPlayer = null;
+    isPlaying.value = false;
+    playProgress.value = 0;
+  }
   ElMessage.success("记录已删除");
 };
 
 const formatDate = (value: string) => new Date(value).toLocaleString();
+const formatTime = (seconds: number) => {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minute = String(Math.floor(safe / 60)).padStart(2, "0");
+  const second = String(safe % 60).padStart(2, "0");
+  return `${minute}:${second}`;
+};
+
+const playerTimeLabel = computed(() => {
+  if (!audioPlayer) {
+    return currentRecord.value?.status || "--";
+  }
+  return `${formatTime(audioPlayer.currentTime)} / ${formatTime(playerDuration.value)}`;
+});
 
 watch(searchText, () => {
   loadRecords();
+});
+
+onBeforeUnmount(() => {
+  audioPlayer?.pause();
 });
 
 onMounted(() => {

@@ -80,6 +80,22 @@ export interface TutorialItem {
   duration: string;
   cover: string;
   summary: string;
+  content?: string;
+  steps?: string[];
+  targetRoute?: string;
+}
+
+export interface TeachingSlide {
+  id: string;
+  title: string;
+  script: string;
+  sourceName?: string;
+  backgroundId?: string;
+  backgroundName?: string;
+  speakerId?: string;
+  speakerName?: string;
+  voiceId?: number | null;
+  voiceName?: string;
 }
 
 export interface TeachingProject {
@@ -94,4 +110,11 @@ export interface TeachingProject {
   status: string;
   createdAt: string;
   updatedAt: string;
+  slides?: TeachingSlide[];
+  mode?: "course" | "video";
+  speakerId?: string;
+  speakerName?: string;
+  backgroundId?: string;
+  backgroundName?: string;
+  voiceName?: string;
 }

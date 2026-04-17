@@ -9,6 +9,8 @@ export function useVoiceCloneLogic() {
   const uploadMode = ref<"select" | "record">("select");
   const recordTimer = ref("00 : 00");
   const isRecording = ref(false);
+  const recordedAudioUrl = ref("");
+  const sampleName = ref("");
   const myVoices = ref<VoiceModel[]>([]);
   const selectedFiles = reactive<{ cover: File | null; sample: File | null }>({
     cover: null,
@@ -22,6 +24,9 @@ export function useVoiceCloneLogic() {
     aiPrompt: "",
   });
   let timer: number | null = null;
+  let mediaRecorder: MediaRecorder | null = null;
+  let mediaStream: MediaStream | null = null;
+  let recordedChunks: Blob[] = [];
 
   const loadVoices = async () => {
     loading.value = true;
@@ -43,11 +48,14 @@ export function useVoiceCloneLogic() {
 
   const setSampleFile = (file: File | null) => {
     selectedFiles.sample = file;
+    sampleName.value = file?.name || "";
+    if (recordedAudioUrl.value && !file) {
+      URL.revokeObjectURL(recordedAudioUrl.value);
+      recordedAudioUrl.value = "";
+    }
   };
 
-  const enterRecordMode = () => {
-    uploadMode.value = "record";
-    isRecording.value = true;
+  const syncTimer = () => {
     let seconds = 0;
     if (timer) window.clearInterval(timer);
     timer = window.setInterval(() => {
@@ -58,20 +66,91 @@ export function useVoiceCloneLogic() {
     }, 1000);
   };
 
+  const enterRecordMode = async () => {
+    uploadMode.value = "record";
+    if (!navigator.mediaDevices?.getUserMedia) {
+      ElMessage.warning("当前浏览器不支持录音，请上传音频文件");
+      return;
+    }
+
+    try {
+      recordedChunks = [];
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(mediaStream);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "audio/webm" });
+        const file = new File([blob], `record-${Date.now()}.webm`, { type: blob.type });
+        setSampleFile(file);
+        if (recordedAudioUrl.value) {
+          URL.revokeObjectURL(recordedAudioUrl.value);
+        }
+        recordedAudioUrl.value = URL.createObjectURL(blob);
+        mediaStream?.getTracks().forEach((track) => track.stop());
+        mediaStream = null;
+        mediaRecorder = null;
+        ElMessage.success("录音样本已生成，可直接提交");
+      };
+      mediaRecorder.start();
+      isRecording.value = true;
+      syncTimer();
+    } catch {
+      ElMessage.warning("麦克风权限获取失败，请改为上传音频文件");
+      uploadMode.value = "select";
+    }
+  };
+
   const stopTimer = () => {
     isRecording.value = false;
-    if (timer) window.clearInterval(timer);
+    if (timer) {
+      window.clearInterval(timer);
+      timer = null;
+    }
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    }
   };
 
   const goBack = () => {
-    stopTimer();
+    if (isRecording.value) {
+      stopTimer();
+    }
     recordTimer.value = "00 : 00";
     uploadMode.value = "select";
+  };
+
+  const previewSample = () => {
+    if (!recordedAudioUrl.value && !selectedFiles.sample) {
+      ElMessage.warning("请先上传或录制音频样本");
+      return;
+    }
+    const needsCleanup = !recordedAudioUrl.value && !!selectedFiles.sample;
+    const targetUrl = recordedAudioUrl.value || URL.createObjectURL(selectedFiles.sample as File);
+    const audio = new Audio(targetUrl);
+    audio.onended = () => {
+      if (needsCleanup) {
+        URL.revokeObjectURL(targetUrl);
+      }
+    };
+    audio.play().catch(() => {
+      if (needsCleanup) {
+        URL.revokeObjectURL(targetUrl);
+      }
+      ElMessage.warning("样本暂时无法播放");
+    });
   };
 
   const handleSubmit = async () => {
     if (!formData.name) {
       ElMessage.warning("请输入模型名称");
+      return;
+    }
+    if (!selectedFiles.sample) {
+      ElMessage.warning("请先上传或录制音频样本");
       return;
     }
     const payload = new FormData();
@@ -90,6 +169,11 @@ export function useVoiceCloneLogic() {
     formData.aiPrompt = "";
     selectedFiles.cover = null;
     selectedFiles.sample = null;
+    sampleName.value = "";
+    if (recordedAudioUrl.value) {
+      URL.revokeObjectURL(recordedAudioUrl.value);
+      recordedAudioUrl.value = "";
+    }
     goBack();
   };
 
@@ -135,6 +219,8 @@ export function useVoiceCloneLogic() {
     uploadMode,
     recordTimer,
     isRecording,
+    recordedAudioUrl,
+    sampleName,
     myVoices,
     setPrivacy,
     setCoverFile,
@@ -142,6 +228,7 @@ export function useVoiceCloneLogic() {
     enterRecordMode,
     goBack,
     stopTimer,
+    previewSample,
     handleSubmit,
     handleDelete,
     toggleVisibility,

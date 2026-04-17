@@ -37,7 +37,7 @@
         <div class="left-list" v-loading="loading">
           <div class="voice-card" v-for="item in voiceList" :key="item.id">
             <div class="card-left">
-              <img :src="item.coverUrl || fallbackAvatar" class="voice-avatar" />
+              <img :src="item.coverUrl || fallbackAvatar" class="voice-avatar" @click="previewVoice(item.id, item.sampleAudioUrl)" />
             </div>
 
             <div class="card-center">
@@ -51,8 +51,10 @@
               </div>
 
               <div class="play-row">
-                <el-icon class="play-icon" @click="playSample(item.sampleAudioUrl)"><CaretRight /></el-icon>
-                <span class="play-wave">{{ item.desc }}</span>
+                <el-icon class="play-icon" :class="{ active: playingId === item.id }" @click="previewVoice(item.id, item.sampleAudioUrl)">
+                  <CaretRight />
+                </el-icon>
+                <span class="play-wave">{{ item.desc || "点击试听社区样音" }}</span>
               </div>
 
               <div class="action-bar">
@@ -75,7 +77,7 @@
           <h3 class="rank-title">最佳声音</h3>
 
           <div class="rank-list">
-            <div class="rank-item" v-for="(item, index) in rankList" :key="item.id">
+            <div class="rank-item" v-for="(item, index) in rankList" :key="item.id" @click="useRankVoice(item.id)">
               <div class="rank-num">{{ (index + 1).toString().padStart(2, "0") }}</div>
 
               <div class="rank-info">
@@ -103,12 +105,8 @@ import { Clock, CaretRight, VideoPlay, StarFilled, Share, Star } from "@element-
 import fallbackAvatar from "../assets/images/voice-avatar.png";
 import { useCommunityLogic } from "../composables/useCommunityLogic";
 
-const { filters, voiceList, rankList, loading, load, likeVoice, favoriteVoice, useVoice } = useCommunityLogic();
-
-const playSample = (audioUrl: string) => {
-  const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}${audioUrl}`);
-  audio.play().catch(() => undefined);
-};
+const { filters, voiceList, rankList, loading, playingId, load, previewVoice, likeVoice, favoriteVoice, useVoice, useRankVoice } =
+  useCommunityLogic();
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
@@ -140,6 +138,7 @@ onMounted(() => {
 .v-date { display: flex; align-items: center; gap: 4px; }
 .play-row { display: flex; align-items: center; gap: 8px; color: #333; margin-bottom: 15px; }
 .play-icon { font-size: 16px; cursor: pointer; }
+.play-icon.active { color: #5362bc; }
 .play-wave { font-size: 12px; letter-spacing: 1px; color: #666; }
 .action-bar { display: flex; gap: 10px; }
 .use-btn { width: 100px; background-color: #5362bc; border-color: #5362bc; font-weight: bold; }
@@ -150,7 +149,8 @@ onMounted(() => {
 .right-rank { width: 280px; background-color: #f0f2f5; border-radius: 12px; padding: 20px; height: fit-content; }
 .rank-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 20px; }
 .rank-list { display: flex; flex-direction: column; gap: 20px; }
-.rank-item { display: flex; align-items: center; }
+.rank-item { display: flex; align-items: center; cursor: pointer; border-radius: 8px; padding: 6px; }
+.rank-item:hover { background: rgba(83, 98, 188, 0.08); }
 .rank-num { width: 30px; font-size: 16px; font-weight: bold; color: #333; }
 .rank-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .r-name { font-size: 14px; font-weight: bold; color: #333; }

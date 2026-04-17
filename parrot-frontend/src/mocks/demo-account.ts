@@ -64,6 +64,9 @@ type DemoState = {
     duration: string;
     cover: string;
     summary: string;
+    content?: string;
+    steps?: string[];
+    targetRoute?: string;
   }>;
   teachingProjects: Array<{
     id: number;
@@ -75,6 +78,23 @@ type DemoState = {
     subtitleEnabled: boolean;
     voiceId: number | null;
     status: string;
+    mode?: "course" | "video";
+    speakerId?: string;
+    speakerName?: string;
+    backgroundId?: string;
+    backgroundName?: string;
+    voiceName?: string;
+    slides?: Array<{
+      id: string;
+      title: string;
+      script: string;
+      speakerId?: string;
+      speakerName?: string;
+      backgroundId?: string;
+      backgroundName?: string;
+      voiceId?: number | null;
+      voiceName?: string;
+    }>;
     createdAt: string;
     updatedAt: string;
   }>;
@@ -206,10 +226,50 @@ const initialState = (): DemoState => {
       },
     ],
     tutorials: [
-      { id: 1, category: "guide", title: "前端演示模式说明", duration: "01:20", cover: "", summary: "说明该测试账号只做前端校验。" },
-      { id: 2, category: "dubbing", title: "AI 配音流程", duration: "02:10", cover: "", summary: "模型选择、文稿生成、试听和导出。" },
-      { id: 3, category: "clone", title: "AI 声音建模提示", duration: "01:45", cover: "", summary: "描述与标签由前端模拟生成。" },
-      { id: 4, category: "education", title: "教学 AI 帮写", duration: "02:30", cover: "", summary: "教学稿件生成与保存演示。" },
+      {
+        id: 1,
+        category: "guide",
+        title: "前端演示模式说明",
+        duration: "01:20",
+        cover: "",
+        summary: "说明该测试账号只做前端校验。",
+        content: "该模式用于验证全站前端交互、状态联动和页面流程，不依赖真实后端账号。",
+        steps: ["使用测试账号登录。", "选择要体验的功能页面。", "在对应页面完成 AI 生成、保存和历史回查。"],
+        targetRoute: "/home",
+      },
+      {
+        id: 2,
+        category: "dubbing",
+        title: "AI 配音流程",
+        duration: "02:10",
+        cover: "",
+        summary: "模型选择、文稿生成、试听和导出。",
+        content: "从需求描述到导出音频，完整体验模型选择、音色选择和配音记录入库。",
+        steps: ["选择模型与音色。", "输入需求并生成配音稿。", "试听或导出后前往音频记录查看结果。"],
+        targetRoute: "/dubbing",
+      },
+      {
+        id: 3,
+        category: "clone",
+        title: "AI 声音建模提示",
+        duration: "01:45",
+        cover: "",
+        summary: "描述与标签由前端模拟生成。",
+        content: "上传或录制样本后，可以让 AI 自动生成声音描述与标签，再创建模型。",
+        steps: ["输入模型名称。", "录制或上传音频样本。", "点击 AI 生成后提交声音模型。"],
+        targetRoute: "/clone",
+      },
+      {
+        id: 4,
+        category: "education",
+        title: "教学 AI 帮写",
+        duration: "02:30",
+        cover: "",
+        summary: "教学稿件生成与保存演示。",
+        content: "可导入课件、多页编辑讲解稿，并为当前页面选择数字人、声音和背景。",
+        steps: ["导入课件或新建页面。", "配置资源并生成 AI 讲解稿。", "保存草稿或生成视频任务。"],
+        targetRoute: "/teching",
+      },
     ],
     teachingProjects: [
       {
@@ -222,6 +282,25 @@ const initialState = (): DemoState => {
         subtitleEnabled: true,
         voiceId: 1,
         status: "completed",
+        mode: "course",
+        speakerId: "avatar-teacher",
+        speakerName: "讲师数字人",
+        backgroundId: "bg-gradient",
+        backgroundName: "渐变演示背景",
+        voiceName: "前端演示音色",
+        slides: [
+          {
+            id: "slide-demo-1",
+            title: "前端演示教学项目",
+            script: "这是一个前端演示教学项目，用于验证 AI 讲解稿和生成任务页面。",
+            speakerId: "avatar-teacher",
+            speakerName: "讲师数字人",
+            backgroundId: "bg-gradient",
+            backgroundName: "渐变演示背景",
+            voiceId: 1,
+            voiceName: "前端演示音色",
+          },
+        ],
         createdAt,
         updatedAt: createdAt,
       },

@@ -35,6 +35,12 @@ export const likeCommunityVoice = (voiceId: number) =>
     method: "POST",
   });
 
+export const playCommunityVoice = (voiceId: number) =>
+  apiRequest<VoiceModel>({
+    url: `/api/community/voices/${voiceId}/play`,
+    method: "POST",
+  });
+
 export const favoriteCommunityVoice = (voiceId: number) =>
   apiRequest<VoiceModel>({
     url: `/api/community/voices/${voiceId}/favorite`,

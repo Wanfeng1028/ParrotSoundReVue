@@ -1,7 +1,39 @@
-import { reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
+import { fetchDubbingOptions } from "../api/dubbing";
 import { fetchTeachingProjects, generateTeachingScript, saveTeachingProject } from "../api/teaching";
-import type { AiModelOption, TeachingProject } from "../types";
+import type { AiModelOption, TeachingProject, TeachingSlide } from "../types";
+
+type ResourceTab = "avatar" | "voice" | "background";
+
+type TeachingResource = {
+  id: string;
+  type: ResourceTab;
+  name: string;
+  desc: string;
+  cover: string;
+  gender?: string;
+  pose?: string;
+  voiceId?: number | null;
+};
+
+const createSlide = (index: number, sourceName = ""): TeachingSlide => ({
+  id: `slide-${Date.now()}-${index}`,
+  title: `第 ${index + 1} 页`,
+  script: "",
+  sourceName,
+});
+
+const avatarResources: TeachingResource[] = [
+  { id: "avatar-teacher", type: "avatar", name: "讲师数字人", desc: "适合课堂讲解与知识点拆解", cover: "", gender: "all", pose: "all" },
+  { id: "avatar-host", type: "avatar", name: "主持数字人", desc: "适合导学和活动串场", cover: "", gender: "all", pose: "all" },
+];
+
+const backgroundResources: TeachingResource[] = [
+  { id: "bg-classroom", type: "background", name: "教室背景", desc: "适合课程讲授和板书式内容", cover: "" },
+  { id: "bg-lab", type: "background", name: "实验室背景", desc: "适合理工科实验与演示", cover: "" },
+  { id: "bg-gradient", type: "background", name: "渐变演示背景", desc: "适合 AI 课件封面和转场", cover: "" },
+];
 
 export function useEducationLogic() {
   const settings = reactive({
@@ -9,49 +41,274 @@ export function useEducationLogic() {
     resolution: "1080P",
     bitrate: "default",
   });
-  const slides = ref([1, 2, 3]);
+  const slides = ref<TeachingSlide[]>([createSlide(0)]);
   const activeSlideIndex = ref(0);
   const showSubtitle = ref(true);
   const isTrackExpanded = ref(false);
   const textContent = ref("");
   const searchText = ref("");
   const filter = reactive({ gender: "all", pose: "all" });
-  const zoomLevel = ref(50);
   const projectTitle = ref("未命名教学项目");
   const projects = ref<TeachingProject[]>([]);
   const aiModels = ref<AiModelOption[]>([]);
   const selectedModel = ref("");
   const aiPrompt = ref("");
   const loading = ref(false);
+  const activeResourceTab = ref<ResourceTab>("avatar");
+  const teachingMode = ref<"course" | "video">("course");
+  const currentProjectId = ref<number | null>(null);
+  const selectedAvatarId = ref("avatar-teacher");
+  const selectedBackgroundId = ref("bg-gradient");
+  const selectedVoiceId = ref<number | null>(null);
+  const voiceResources = ref<TeachingResource[]>([]);
 
-  const loadProjects = async () => {
-    const response = await fetchTeachingProjects();
-    projects.value = response.data.projects;
-    aiModels.value = response.data.models;
-    selectedModel.value = response.data.models[0]?.id || "";
-    if (response.data.projects[0]) {
-      const project = response.data.projects[0];
-      projectTitle.value = project.title;
-      textContent.value = project.script;
-      settings.ratio = project.ratio;
-      settings.resolution = project.resolution;
-      settings.bitrate = project.bitrate;
-      showSubtitle.value = project.subtitleEnabled;
+  const activeSlide = computed(() => slides.value[activeSlideIndex.value] || slides.value[0]);
+
+  watch(
+    [projectTitle, textContent],
+    () => {
+      const slide = activeSlide.value;
+      if (!slide) {
+        return;
+      }
+      slide.title = projectTitle.value;
+      slide.script = textContent.value;
+      slide.backgroundId = selectedBackgroundId.value;
+      slide.speakerId = selectedAvatarId.value;
+      slide.voiceId = selectedVoiceId.value;
+      slide.backgroundName = selectedBackgroundName.value;
+      slide.speakerName = selectedAvatarName.value;
+      slide.voiceName = selectedVoiceName.value;
+    },
+    { immediate: true },
+  );
+
+  const selectedAvatarName = computed(
+    () => avatarResources.find((item) => item.id === selectedAvatarId.value)?.name || "未选择数字人",
+  );
+
+  const selectedBackgroundName = computed(
+    () => backgroundResources.find((item) => item.id === selectedBackgroundId.value)?.name || "未选择背景",
+  );
+
+  const selectedVoiceName = computed(
+    () => voiceResources.value.find((item) => item.voiceId === selectedVoiceId.value)?.name || "未选择声音",
+  );
+
+  const filteredResources = computed(() => {
+    const search = searchText.value.trim().toLowerCase();
+    const base =
+      activeResourceTab.value === "avatar"
+        ? avatarResources
+        : activeResourceTab.value === "background"
+          ? backgroundResources
+          : voiceResources.value;
+
+    return base.filter((item) => {
+      const matchesSearch = !search || `${item.name}${item.desc}`.toLowerCase().includes(search);
+      const matchesGender = filter.gender === "all" || item.gender === filter.gender;
+      const matchesPose = filter.pose === "all" || item.pose === filter.pose;
+      return matchesSearch && matchesGender && matchesPose;
+    });
+  });
+
+  const projectCards = computed(() =>
+    projects.value.filter((item) =>
+      !searchText.value.trim() || `${item.title}${item.script}`.toLowerCase().includes(searchText.value.toLowerCase()),
+    ),
+  );
+
+  const syncEditorFromSlide = () => {
+    const slide = activeSlide.value;
+    if (!slide) {
+      return;
+    }
+    projectTitle.value = slide.title || projectTitle.value;
+    textContent.value = slide.script || "";
+    if (slide.backgroundId) {
+      selectedBackgroundId.value = slide.backgroundId;
+    }
+    if (slide.speakerId) {
+      selectedAvatarId.value = slide.speakerId;
+    }
+    if (typeof slide.voiceId === "number") {
+      selectedVoiceId.value = slide.voiceId;
     }
   };
 
-  const handleSave = async (status = "draft") => {
+  const normalizeSlides = (project?: TeachingProject) => {
+    if (project?.slides?.length) {
+      return project.slides.map((slide, index) => ({
+        ...createSlide(index),
+        ...slide,
+      }));
+    }
+
+    return [
+      {
+        ...createSlide(0),
+        title: project?.title || "第 1 页",
+        script: project?.script || "",
+      },
+    ];
+  };
+
+  const applyProject = (project: TeachingProject) => {
+    currentProjectId.value = project.id;
+    teachingMode.value = project.mode || "course";
+    settings.ratio = project.ratio;
+    settings.resolution = project.resolution;
+    settings.bitrate = project.bitrate;
+    showSubtitle.value = project.subtitleEnabled;
+    selectedVoiceId.value = project.voiceId;
+    selectedAvatarId.value = project.speakerId || selectedAvatarId.value;
+    selectedBackgroundId.value = project.backgroundId || selectedBackgroundId.value;
+    slides.value = normalizeSlides(project);
+    activeSlideIndex.value = 0;
+    projectTitle.value = project.title;
+    textContent.value = project.script;
+    ElMessage.success(`已加载项目：${project.title}`);
+  };
+
+  const buildProjectPayload = (status = "draft") => ({
+    id: currentProjectId.value || undefined,
+    title: projectTitle.value.trim() || "未命名教学项目",
+    script: textContent.value,
+    ratio: settings.ratio,
+    resolution: settings.resolution,
+    bitrate: settings.bitrate,
+    subtitleEnabled: showSubtitle.value,
+    voiceId: selectedVoiceId.value,
+    status,
+    mode: teachingMode.value,
+    speakerId: selectedAvatarId.value,
+    speakerName: selectedAvatarName.value,
+    backgroundId: selectedBackgroundId.value,
+    backgroundName: selectedBackgroundName.value,
+    voiceName: selectedVoiceName.value,
+    slides: slides.value.map((slide) => ({
+      ...slide,
+      backgroundId: selectedBackgroundId.value,
+      backgroundName: selectedBackgroundName.value,
+      speakerId: selectedAvatarId.value,
+      speakerName: selectedAvatarName.value,
+      voiceId: selectedVoiceId.value,
+      voiceName: selectedVoiceName.value,
+    })),
+  });
+
+  const loadProjects = async () => {
     loading.value = true;
     try {
-      await saveTeachingProject({
-        title: projectTitle.value,
-        script: textContent.value,
-        ratio: settings.ratio,
-        resolution: settings.resolution,
-        bitrate: settings.bitrate,
-        subtitleEnabled: showSubtitle.value,
-        status,
-      });
+      const [projectsResponse, dubbingResponse] = await Promise.all([
+        fetchTeachingProjects(),
+        fetchDubbingOptions(),
+      ]);
+
+      projects.value = projectsResponse.data.projects;
+      aiModels.value = projectsResponse.data.models;
+      selectedModel.value =
+        projectsResponse.data.models.find((item) => item.isDefault)?.id ||
+        projectsResponse.data.models[0]?.id ||
+        "";
+      voiceResources.value = dubbingResponse.data.voices.map((voice) => ({
+        id: `voice-${voice.id}`,
+        type: "voice",
+        name: voice.name,
+        desc: `标签：${voice.tag}`,
+        cover: voice.avatar || "",
+        voiceId: voice.id,
+      }));
+
+      if (!selectedVoiceId.value) {
+        selectedVoiceId.value = dubbingResponse.data.voices[0]?.id || null;
+      }
+
+      if (projectsResponse.data.projects[0]) {
+        applyProject(projectsResponse.data.projects[0]);
+      } else {
+        syncEditorFromSlide();
+      }
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const selectSlide = (index: number) => {
+    activeSlideIndex.value = index;
+    syncEditorFromSlide();
+  };
+
+  const addSlide = () => {
+    slides.value.push(createSlide(slides.value.length));
+    selectSlide(slides.value.length - 1);
+    ElMessage.success("已新增一页课件");
+  };
+
+  const importFiles = (files: FileList | null) => {
+    if (!files?.length) {
+      return;
+    }
+
+    const importedSlides = Array.from(files).map((file, index) => ({
+      ...createSlide(index),
+      title: file.name.replace(/\.[^.]+$/, ""),
+      script: `已导入文件：${file.name}\n请继续补充本页讲解稿。`,
+      sourceName: file.name,
+    }));
+    slides.value = importedSlides;
+    activeSlideIndex.value = 0;
+    projectTitle.value = importedSlides[0]?.title || "未命名教学项目";
+    textContent.value = importedSlides[0]?.script || "";
+    ElMessage.success(`已导入 ${files.length} 个文件并生成课件页`);
+  };
+
+  const toggleTeachingMode = () => {
+    teachingMode.value = teachingMode.value === "course" ? "video" : "course";
+    ElMessage.success(teachingMode.value === "course" ? "已切换为 AI 课件模式" : "已切换为讲解视频模式");
+  };
+
+  const selectResourceTab = (tab: ResourceTab) => {
+    activeResourceTab.value = tab;
+  };
+
+  const selectResource = (resource: TeachingResource) => {
+    if (resource.type === "avatar") {
+      selectedAvatarId.value = resource.id;
+      ElMessage.success(`已选择数字人：${resource.name}`);
+      return;
+    }
+    if (resource.type === "background") {
+      selectedBackgroundId.value = resource.id;
+      ElMessage.success(`已应用背景：${resource.name}`);
+      return;
+    }
+    selectedVoiceId.value = resource.voiceId || null;
+    ElMessage.success(`已选择声音：${resource.name}`);
+  };
+
+  const handleSaveCurrentSlide = () => {
+    const slide = activeSlide.value;
+    if (!slide) {
+      return;
+    }
+    slide.title = projectTitle.value;
+    slide.script = textContent.value;
+    slide.backgroundId = selectedBackgroundId.value;
+    slide.backgroundName = selectedBackgroundName.value;
+    slide.speakerId = selectedAvatarId.value;
+    slide.speakerName = selectedAvatarName.value;
+    slide.voiceId = selectedVoiceId.value;
+    slide.voiceName = selectedVoiceName.value;
+    ElMessage.success(`已保存当前页：${slide.title}`);
+  };
+
+  const handleSave = async (status = "draft") => {
+    handleSaveCurrentSlide();
+    loading.value = true;
+    try {
+      const response = await saveTeachingProject(buildProjectPayload(status));
+      currentProjectId.value = response.data.id;
       await loadProjects();
       ElMessage.success(status === "completed" ? "教学任务已生成" : "教学项目已保存");
     } finally {
@@ -62,16 +319,23 @@ export function useEducationLogic() {
   const handleGenerate = async () => handleSave("completed");
 
   const generateByAi = async () => {
-    if (!aiPrompt.value) {
+    if (!aiPrompt.value.trim()) {
       ElMessage.warning("请输入 AI 帮写需求");
       return;
     }
-    const response = await generateTeachingScript({
-      prompt: aiPrompt.value,
-      model: selectedModel.value,
-    });
-    textContent.value = response.data.content;
-    ElMessage.success("AI 讲解稿已生成");
+
+    loading.value = true;
+    try {
+      const response = await generateTeachingScript({
+        prompt: `${aiPrompt.value}\n课件模式：${teachingMode.value === "course" ? "AI 课件" : "讲解视频"}\n当前标题：${projectTitle.value}`,
+        model: selectedModel.value,
+      });
+      textContent.value = response.data.content;
+      handleSaveCurrentSlide();
+      ElMessage.success("AI 讲解稿已生成");
+    } finally {
+      loading.value = false;
+    }
   };
 
   return {
@@ -83,16 +347,33 @@ export function useEducationLogic() {
     textContent,
     searchText,
     filter,
-    zoomLevel,
     projectTitle,
     projects,
+    projectCards,
     aiModels,
     selectedModel,
     aiPrompt,
     loading,
+    activeResourceTab,
+    teachingMode,
+    filteredResources,
+    selectedAvatarId,
+    selectedBackgroundId,
+    selectedVoiceId,
+    selectedAvatarName,
+    selectedBackgroundName,
+    selectedVoiceName,
     loadProjects,
     handleSave,
     handleGenerate,
     generateByAi,
+    importFiles,
+    addSlide,
+    selectSlide,
+    handleSaveCurrentSlide,
+    toggleTeachingMode,
+    selectResourceTab,
+    selectResource,
+    applyProject,
   };
 }

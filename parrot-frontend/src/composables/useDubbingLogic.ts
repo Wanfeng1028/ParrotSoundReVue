@@ -102,7 +102,11 @@ export function useDubbingLogic() {
     try {
       const response = await fetchDubbingOptions();
       voiceList.value = response.data.voices;
-      currentVoice.value = response.data.voices[0] || null;
+      const preferredVoiceId = Number(localStorage.getItem("preferredCommunityVoiceId") || 0);
+      currentVoice.value =
+        response.data.voices.find((item) => item.id === preferredVoiceId) ||
+        response.data.voices[0] ||
+        null;
       emotionList.value = response.data.emotions;
       currentEmotion.value = response.data.emotions[0] || "默认";
       availableModels.value = response.data.models.map((item) => ({ id: item.id, label: item.label }));
