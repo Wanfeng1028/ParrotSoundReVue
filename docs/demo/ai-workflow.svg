@@ -1,91 +1,84 @@
-<svg width="1200" height="680" viewBox="0 0 1200 680" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1280" height="760" viewBox="0 0 1280 760" fill="none" xmlns="http://www.w3.org/2000/svg">
   <style>
-    .bg { fill: #f4f6ff; }
-    .card { fill: white; stroke: #dfe4ff; stroke-width: 2; rx: 28; }
-    .title { font: 700 28px 'Segoe UI', sans-serif; fill: #31365f; }
-    .subtitle { font: 500 16px 'Segoe UI', sans-serif; fill: #5c648f; }
-    .chip { fill: #eef1ff; rx: 14; }
-    .chipText { font: 600 15px 'Segoe UI', sans-serif; fill: #4a57bf; }
-    .step { fill: #4d5bd1; rx: 22; }
-    .stepText { font: 700 24px 'Segoe UI', sans-serif; fill: white; }
-    .hint { font: 500 17px 'Segoe UI', sans-serif; fill: #6872a1; }
-    .pulseA { animation: pulse 4s ease-in-out infinite; }
-    .pulseB { animation: pulse 4s ease-in-out 1.2s infinite; }
-    .pulseC { animation: pulse 4s ease-in-out 2.4s infinite; }
-    .line { stroke: #9aa6ff; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 14 18; animation: dash 8s linear infinite; }
-    .dot { fill: #6d79e8; animation: travel 4s linear infinite; }
-    .dotB { animation-delay: 1.25s; }
-    .dotC { animation-delay: 2.5s; }
-    @keyframes pulse {
-      0%, 100% { transform: translateY(0px); filter: drop-shadow(0 8px 14px rgba(77,91,209,0.08)); }
-      50% { transform: translateY(-8px); filter: drop-shadow(0 20px 30px rgba(77,91,209,0.16)); }
-    }
-    @keyframes dash {
-      from { stroke-dashoffset: 0; }
-      to { stroke-dashoffset: -160; }
-    }
-    @keyframes travel {
-      0% { opacity: 0; }
-      10% { opacity: 1; }
-      45% { transform: translateX(0px); opacity: 1; }
-      80% { transform: translateX(370px); opacity: 1; }
-      100% { transform: translateX(420px); opacity: 0; }
-    }
+    .bg { fill: #f5f7ff; }
+    .panel { fill: #eef2ff; }
+    .card { fill: #ffffff; stroke: #dbe2ff; stroke-width: 2; }
+    .shadow { filter: drop-shadow(0 20px 36px rgba(85, 101, 214, 0.12)); }
+    .title { font: 700 34px 'Segoe UI', sans-serif; fill: #2f3b86; }
+    .subtitle { font: 500 18px 'Segoe UI', sans-serif; fill: #5d689d; }
+    .sectionTitle { font: 700 28px 'Segoe UI', sans-serif; fill: #3341a1; }
+    .label { font: 700 17px 'Segoe UI', sans-serif; fill: #5461c9; }
+    .body { font: 500 17px 'Segoe UI', sans-serif; fill: #6170a2; }
+    .small { font: 600 15px 'Segoe UI', sans-serif; fill: #6a76af; }
+    .chip { fill: #edf1ff; }
+    .action { fill: #5866dd; }
+    .actionAlt { fill: #e9edff; }
+    .actionText { font: 700 18px 'Segoe UI', sans-serif; fill: #ffffff; }
+    .actionTextAlt { font: 700 16px 'Segoe UI', sans-serif; fill: #5260ca; }
+    .line { stroke: #98a6ff; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 14 16; }
+    .node { fill: #6a78ea; }
   </style>
-  <rect class="bg" width="1200" height="680" rx="36"/>
-  <text x="80" y="92" class="title">ParrotSoundReVue AI 大模型应用落地演示</text>
-  <text x="80" y="124" class="subtitle">前端显式模型选择 + 后端 OpenAI-Compatible Adapter + 真实业务闭环</text>
 
-  <g class="pulseA" transform="translate(80 180)">
-    <rect class="card" width="300" height="360" rx="28"/>
-    <rect x="28" y="28" width="110" height="34" class="chip" rx="17"/>
-    <text x="50" y="50" class="chipText">AI 文稿生成</text>
-    <text x="28" y="104" class="title" style="font-size:24px">智能配音</text>
-    <text x="28" y="138" class="hint">1. 选择模型</text>
-    <text x="28" y="172" class="hint">2. 输入创作需求</text>
-    <text x="28" y="206" class="hint">3. 返回朗读文稿</text>
-    <text x="28" y="240" class="hint">4. 试听/导出入库</text>
-    <rect x="28" y="286" width="244" height="46" class="step" rx="18"/>
-    <text x="61" y="316" class="stepText" style="font-size:20px">Model: gpt-4o-mini</text>
+  <rect class="bg" width="1280" height="760" rx="36" />
+  <rect x="54" y="44" width="1172" height="672" rx="34" class="panel" />
+
+  <text x="86" y="102" class="title">ParrotSoundReVue AI Workflow</text>
+  <text x="86" y="136" class="subtitle">OpenAI-Compatible models, visible product integration, and real frontend-backend closure.</text>
+  <text x="86" y="164" class="subtitle">OpenAI-Compatible 模型接入、显性产品化设计、真实前后端闭环。</text>
+
+  <g class="shadow" transform="translate(86 210)">
+    <rect width="320" height="360" rx="28" class="card" />
+    <rect x="24" y="24" width="118" height="34" rx="17" class="chip" />
+    <text x="46" y="46" class="label">AI Draft</text>
+
+    <text x="24" y="98" class="sectionTitle">智能配音</text>
+    <text x="24" y="132" class="body">1. 选择模型和音色</text>
+    <text x="24" y="166" class="body">2. 输入创作需求与风格</text>
+    <text x="24" y="200" class="body">3. AI 生成可朗读文稿</text>
+    <text x="24" y="234" class="body">4. 试听、导出并写入历史</text>
+
+    <rect x="24" y="276" width="272" height="48" rx="20" class="action" />
+    <text x="70" y="306" class="actionText">Model: gpt-4o-mini</text>
   </g>
 
-  <g class="pulseB" transform="translate(450 180)">
-    <rect class="card" width="300" height="360" rx="28"/>
-    <rect x="28" y="28" width="126" height="34" class="chip" rx="17"/>
-    <text x="47" y="50" class="chipText">AI 标签/描述</text>
-    <text x="28" y="104" class="title" style="font-size:24px">声音克隆</text>
-    <text x="28" y="138" class="hint">1. 输入模型名与风格</text>
-    <text x="28" y="172" class="hint">2. AI 生成描述 + 标签</text>
-    <text x="28" y="206" class="hint">3. 上传音频样本</text>
-    <text x="28" y="240" class="hint">4. 创建公开/私有模型</text>
-    <rect x="28" y="286" width="246" height="46" class="step" rx="18"/>
-    <text x="69" y="316" class="stepText" style="font-size:20px">Adapter Response JSON</text>
+  <g class="shadow" transform="translate(480 210)">
+    <rect width="320" height="360" rx="28" class="card" />
+    <rect x="24" y="24" width="146" height="34" rx="17" class="chip" />
+    <text x="47" y="46" class="label">AI Tags + Desc</text>
+
+    <text x="24" y="98" class="sectionTitle">声音克隆</text>
+    <text x="24" y="132" class="body">1. 输入模型名和目标风格</text>
+    <text x="24" y="166" class="body">2. AI 生成标签和描述</text>
+    <text x="24" y="200" class="body">3. 上传或录制声音样本</text>
+    <text x="24" y="234" class="body">4. 创建公开或私有模型</text>
+
+    <rect x="24" y="276" width="272" height="48" rx="20" class="actionAlt" />
+    <text x="78" y="306" class="actionTextAlt">Adapter Response JSON</text>
   </g>
 
-  <g class="pulseC" transform="translate(820 180)">
-    <rect class="card" width="300" height="360" rx="28"/>
-    <rect x="28" y="28" width="120" height="34" class="chip" rx="17"/>
-    <text x="46" y="50" class="chipText">AI 讲解稿</text>
-    <text x="28" y="104" class="title" style="font-size:24px">教育教学</text>
-    <text x="28" y="138" class="hint">1. 指定课程目标</text>
-    <text x="28" y="172" class="hint">2. 选择推理模型</text>
-    <text x="28" y="206" class="hint">3. 生成讲解脚本</text>
-    <text x="28" y="240" class="hint">4. 保存为教学任务</text>
-    <rect x="28" y="286" width="220" height="46" class="step" rx="18"/>
-    <text x="64" y="316" class="stepText" style="font-size:20px">Task -> History</text>
+  <g class="shadow" transform="translate(874 210)">
+    <rect width="320" height="360" rx="28" class="card" />
+    <rect x="24" y="24" width="138" height="34" rx="17" class="chip" />
+    <text x="52" y="46" class="label">AI Teaching</text>
+
+    <text x="24" y="98" class="sectionTitle">教育教学</text>
+    <text x="24" y="132" class="body">1. 指定课程主题和目标</text>
+    <text x="24" y="166" class="body">2. 选择推理模型</text>
+    <text x="24" y="200" class="body">3. 生成讲解稿与脚本</text>
+    <text x="24" y="234" class="body">4. 保存任务并进入历史</text>
+
+    <rect x="24" y="276" width="220" height="48" rx="20" class="action" />
+    <text x="84" y="306" class="actionText">Task -&gt; History</text>
   </g>
 
-  <path class="line" d="M390 360 C425 360 420 360 450 360" />
-  <path class="line" d="M760 360 C795 360 790 360 820 360" />
-  <circle class="dot" cx="390" cy="360" r="12"/>
-  <circle class="dot dotB" cx="390" cy="360" r="12"/>
-  <circle class="dot dotC" cx="390" cy="360" r="12"/>
-  <circle class="dot" cx="760" cy="360" r="12"/>
-  <circle class="dot dotB" cx="760" cy="360" r="12"/>
-  <circle class="dot dotC" cx="760" cy="360" r="12"/>
+  <path d="M406 388 C438 388 448 388 480 388" class="line" />
+  <path d="M800 388 C832 388 842 388 874 388" class="line" />
+  <circle cx="406" cy="388" r="11" class="node" />
+  <circle cx="480" cy="388" r="11" class="node" />
+  <circle cx="800" cy="388" r="11" class="node" />
+  <circle cx="874" cy="388" r="11" class="node" />
 
-  <rect x="80" y="582" width="1040" height="48" rx="24" fill="#e7ebff"/>
-  <text x="118" y="613" class="chipText" style="font-size:18px">
-    OpenAI-Compatible Provider Adapter · Model Selector · Real API Errors · History Persistence · Teaching MVP
-  </text>
+  <rect x="118" y="614" width="1044" height="72" rx="26" fill="#e8ecff" />
+  <text x="156" y="652" class="small">OpenAI-Compatible Provider Adapter  ·  Model Selector  ·  Async Task Queue  ·  Real API Errors</text>
+  <text x="224" y="678" class="small">History Persistence  ·  Community Reuse  ·  Teaching MVP  ·  Frontend Demo Mode</text>
 </svg>
