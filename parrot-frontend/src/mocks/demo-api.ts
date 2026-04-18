@@ -37,9 +37,12 @@ type DemoTask = {
 const tasks = new Map<string, DemoTask>();
 
 const demoAiModels = [
-  { id: "gpt-5.4", label: "OpenAI - gpt-5.4", provider: "frontend-demo", isDefault: false },
-  { id: "gpt-5.4-mini", label: "OpenAI - gpt-5.4-mini", provider: "frontend-demo", isDefault: true },
-  { id: "gpt-5.4-nano", label: "OpenAI - gpt-5.4-nano", provider: "frontend-demo", isDefault: false },
+  { id: "gpt-5.2", label: "OpenAI - gpt-5.2", provider: "frontend-demo", isDefault: false },
+  { id: "gpt-5.2-pro", label: "OpenAI - gpt-5.2-pro", provider: "frontend-demo", isDefault: false },
+  { id: "gpt-5.2-codex", label: "OpenAI - gpt-5.2-codex", provider: "frontend-demo", isDefault: false },
+  { id: "gpt-5", label: "OpenAI - gpt-5", provider: "frontend-demo", isDefault: false },
+  { id: "gpt-5-mini", label: "OpenAI - gpt-5-mini", provider: "frontend-demo", isDefault: true },
+  { id: "gpt-5-nano", label: "OpenAI - gpt-5-nano", provider: "frontend-demo", isDefault: false },
   { id: "claude-opus-4-1", label: "Anthropic - claude-opus-4-1", provider: "frontend-demo", isDefault: false },
   { id: "claude-opus-4-0", label: "Anthropic - claude-opus-4-0", provider: "frontend-demo", isDefault: false },
   { id: "claude-sonnet-4-0", label: "Anthropic - claude-sonnet-4-0", provider: "frontend-demo", isDefault: false },

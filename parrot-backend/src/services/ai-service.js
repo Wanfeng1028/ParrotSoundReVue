@@ -1,9 +1,12 @@
 const { env } = require("../config/env");
 
 const modelLabelMap = {
-  "gpt-5.4": "OpenAI - gpt-5.4",
-  "gpt-5.4-mini": "OpenAI - gpt-5.4-mini",
-  "gpt-5.4-nano": "OpenAI - gpt-5.4-nano",
+  "gpt-5.2": "OpenAI - gpt-5.2",
+  "gpt-5.2-pro": "OpenAI - gpt-5.2-pro",
+  "gpt-5.2-codex": "OpenAI - gpt-5.2-codex",
+  "gpt-5": "OpenAI - gpt-5",
+  "gpt-5-mini": "OpenAI - gpt-5-mini",
+  "gpt-5-nano": "OpenAI - gpt-5-nano",
   "claude-opus-4-1": "Anthropic - claude-opus-4-1",
   "claude-opus-4-0": "Anthropic - claude-opus-4-0",
   "claude-sonnet-4-0": "Anthropic - claude-sonnet-4-0",
