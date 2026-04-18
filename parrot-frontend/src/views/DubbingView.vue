@@ -228,7 +228,7 @@ onMounted(() => {
 }
 
 .model-select {
-  width: 240px;
+  width: 340px;
 }
 
 .ai-btn {

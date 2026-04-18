@@ -2,6 +2,7 @@ const path = require("path");
 const express = require("express");
 const { ok } = require("../utils/api");
 const { getCacheMode } = require("../services/cache");
+const { listModels } = require("../services/ai-service");
 const { getMysqlMode } = require("../services/mysql");
 const { env } = require("../config/env");
 
@@ -19,7 +20,7 @@ router.get("/ping", (req, res) => {
 });
 
 router.get("/ai/models", (req, res) => {
-  res.json(ok(env.ai.models.map((item) => ({ id: item, label: item }))));
+  res.json(ok(listModels()));
 });
 
 router.get("/media/demo-audio", (req, res) => {

@@ -53,7 +53,7 @@
         </div>
         <div class="setting-group">
           <span class="label">模型</span>
-          <el-select v-model="selectedModel" size="small" class="transparent-select" style="width: 220px">
+          <el-select v-model="selectedModel" size="small" class="transparent-select" style="width: 340px">
             <el-option v-for="model in aiModels" :key="model.id" :label="model.label" :value="model.id" />
           </el-select>
         </div>
