@@ -62,7 +62,7 @@ const goHome = () => {
 <style scoped>
 .public-layout {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--app-bg);
 }
 
 .page {
@@ -76,16 +76,14 @@ const goHome = () => {
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
-  background:
-    radial-gradient(circle at top left, rgba(110, 184, 255, 0.14), transparent 26%),
-    linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+  background: var(--app-bg);
 }
 
 .page-fallback__card {
   width: min(560px, 100%);
   padding: 32px 28px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--surface-elevated);
   box-shadow: 0 18px 40px rgba(37, 99, 235, 0.12);
   text-align: center;
 }
@@ -102,7 +100,7 @@ const goHome = () => {
 
 .page-fallback__card p {
   margin: 14px 0 0;
-  color: #5b6578;
+  color: var(--text-muted);
   line-height: 1.8;
 }
 
@@ -118,8 +116,9 @@ const goHome = () => {
   min-width: 172px;
   height: 52px;
   border-radius: 20px;
-  border: 1px solid #d8e3f6;
-  color: #334155;
+  border: 1px solid var(--ps-btn-secondary-border);
+  color: var(--text-strong);
+  background: var(--ps-btn-secondary-bg);
 }
 
 .page-fallback__btn--primary.el-button {

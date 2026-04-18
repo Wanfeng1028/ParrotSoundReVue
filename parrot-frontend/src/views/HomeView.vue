@@ -236,7 +236,7 @@ const handleLearnMore = () => {
 
 <style scoped>
 .home-page {
-  background: #ffffff;
+  background: var(--app-bg);
 }
 
 .section-box {
@@ -346,7 +346,7 @@ const handleLearnMore = () => {
 }
 
 .section-three-bg {
-  background-color: #fbfbfc;
+  background: linear-gradient(180deg, rgba(240, 247, 255, 0.72), rgba(230, 241, 255, 0.62));
 }
 
 .section-three__header {
@@ -388,7 +388,7 @@ const handleLearnMore = () => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
+  background-color: var(--surface-elevated);
   cursor: pointer;
   transition:
     transform 0.3s ease,
@@ -456,7 +456,7 @@ const handleLearnMore = () => {
 .custom-card {
   width: 100%;
   height: 100%;
-  background: #fff;
+  background: var(--surface-elevated);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
@@ -471,16 +471,16 @@ const handleLearnMore = () => {
   text-align: center;
   font-size: 20px;
   font-weight: bold;
-  color: #333;
-  background-color: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  color: var(--text-strong);
+  background-color: var(--surface-elevated);
+  border-bottom: 1px solid var(--ps-btn-secondary-border);
 }
 
 .card-img-box {
   flex: 1;
   width: 100%;
   overflow: hidden;
-  background: #fff;
+  background: var(--surface-elevated);
 }
 
 .card-img-box img {
@@ -497,7 +497,7 @@ const handleLearnMore = () => {
   height: 140px;
   padding: 20px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.78);
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.4s ease;
@@ -537,7 +537,7 @@ const handleLearnMore = () => {
 
 .site-footer {
   padding: 40px 24px 56px;
-  background: #ffffff;
+  background: transparent;
 }
 
 .site-footer__inner {
@@ -610,7 +610,7 @@ const handleLearnMore = () => {
   .home-banner__content {
     padding: 28px 20px 36px;
     max-width: none;
-    background: #ffffff;
+    background: var(--surface-elevated);
   }
 
   .home-banner__title {

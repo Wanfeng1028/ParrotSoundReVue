@@ -22,6 +22,13 @@
       </nav>
 
       <div class="app-header__right">
+        <button type="button" class="theme-switch" @click="toggleThemeMode">
+          <el-icon class="theme-switch__icon">
+            <component :is="isDark ? Sunny : Moon" />
+          </el-icon>
+          <span>{{ isDark ? "夜间模式" : "白天模式" }}</span>
+        </button>
+
         <template v-if="isLogin">
           <el-dropdown trigger="click" @command="handleCommand">
             <div class="user-dropdown-link">
@@ -72,13 +79,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { User, Files, SwitchButton, ArrowDown } from "@element-plus/icons-vue";
+import { User, Files, SwitchButton, ArrowDown, Sunny, Moon } from "@element-plus/icons-vue";
 import { useAuthStore } from "../stores/auth";
+import { useThemeMode } from "../composables/useThemeMode";
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const isScrolled = ref(false);
+const { isDark, toggleThemeMode } = useThemeMode();
 
 const navItems = [
   { label: "首页", to: "/home" },
@@ -129,9 +138,9 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(245, 248, 252, 0.88);
+  background: var(--header-bg);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+  border-bottom: 1px solid var(--header-border);
   transition:
     background-color 0.25s ease,
     box-shadow 0.25s ease,
@@ -139,9 +148,9 @@ onBeforeUnmount(() => {
 }
 
 .app-header--scrolled {
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-  border-bottom-color: rgba(17, 24, 39, 0.08);
+  background: var(--header-bg-scrolled);
+  box-shadow: var(--header-shadow);
+  border-bottom-color: var(--header-border-strong);
 }
 
 .app-header__inner {
@@ -215,13 +224,13 @@ onBeforeUnmount(() => {
 
 .app-header__nav-link:hover {
   color: var(--text-strong);
-  background: rgba(15, 23, 42, 0.05);
+  background: var(--header-link-hover-bg);
   transform: translateY(-1px);
 }
 
 .app-header__nav-link.is-active {
-  color: #2563eb;
-  background: linear-gradient(135deg, rgba(110, 184, 255, 0.24), rgba(37, 99, 235, 0.16));
+  color: var(--accent-500);
+  background: var(--nav-active-bg);
 }
 
 .app-header__right {
@@ -229,6 +238,44 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--ps-btn-secondary-border);
+  border-radius: 999px;
+  background: var(--theme-toggle-bg);
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.theme-switch:hover {
+  transform: translateY(-1px);
+  border-color: rgba(90, 174, 255, 0.32);
+}
+
+.theme-switch__icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--theme-toggle-icon-bg);
+  color: var(--accent-500);
 }
 
 .auth-buttons {
@@ -241,8 +288,8 @@ onBeforeUnmount(() => {
   padding: 10px 14px;
   border-radius: 999px;
   color: var(--text-strong);
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--ps-btn-secondary-bg);
+  border: 1px solid var(--ps-btn-secondary-border);
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s ease;
@@ -273,13 +320,13 @@ onBeforeUnmount(() => {
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--ps-btn-secondary-border);
+  background: var(--dropdown-bg);
   transition: background-color 0.2s ease;
 }
 
 .user-dropdown-link:hover {
-  background-color: rgba(239, 246, 255, 0.96);
+  background-color: var(--dropdown-hover-bg);
 }
 
 .user-dropdown-link__copy {
@@ -312,6 +359,10 @@ onBeforeUnmount(() => {
   .app-header__right {
     width: 100%;
     justify-content: center;
+  }
+
+  .app-header__right {
+    flex-wrap: wrap;
   }
 }
 

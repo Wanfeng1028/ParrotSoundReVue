@@ -3,6 +3,7 @@
   --brand-700: #0f766e;
   --brand-600: #0d9488;
   --accent-500: #2563eb;
+  --accent-400: #5aaeff;
   --ps-btn-radius: 20px;
   --ps-btn-height: 56px;
   --ps-btn-height-sm: 42px;
@@ -10,21 +11,91 @@
   --ps-btn-gradient: linear-gradient(135deg, #5aaeff, #2563eb);
   --ps-btn-gradient-hover: linear-gradient(135deg, #4a9efc, #1f56d8);
   --ps-btn-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
-  --ps-btn-secondary-bg: rgba(255, 255, 255, 0.96);
-  --ps-btn-secondary-border: #dfe6f2;
+  --ps-btn-secondary-bg: rgba(255, 255, 255, 0.84);
+  --ps-btn-secondary-border: rgba(181, 207, 245, 0.78);
   --text-strong: #112031;
   --text-muted: #5a6778;
   --text-subtle: #7c8898;
   --shadow-strong: 0 20px 48px rgba(15, 23, 42, 0.14);
+  --shadow-soft: 0 18px 40px rgba(37, 99, 235, 0.08);
+  --app-bg:
+    radial-gradient(circle at top left, rgba(107, 178, 255, 0.24), transparent 24%),
+    radial-gradient(circle at top right, rgba(167, 211, 255, 0.2), transparent 20%),
+    linear-gradient(180deg, #f7fbff 0%, #e9f2ff 52%, #f5f9ff 100%);
+  --surface-elevated: rgba(255, 255, 255, 0.82);
+  --surface-panel: rgba(255, 255, 255, 0.72);
+  --header-bg: rgba(238, 246, 255, 0.74);
+  --header-bg-scrolled: rgba(248, 251, 255, 0.92);
+  --header-border: rgba(111, 162, 222, 0.14);
+  --header-border-strong: rgba(111, 162, 222, 0.2);
+  --header-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  --header-link-hover-bg: rgba(63, 125, 230, 0.08);
+  --nav-active-bg: linear-gradient(135deg, rgba(110, 184, 255, 0.26), rgba(37, 99, 235, 0.14));
+  --theme-toggle-bg: rgba(255, 255, 255, 0.86);
+  --theme-toggle-icon-bg: rgba(90, 174, 255, 0.14);
+  --dropdown-bg: rgba(255, 255, 255, 0.88);
+  --dropdown-hover-bg: rgba(239, 246, 255, 0.96);
   font-family: "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #213547;
-  background-color: #ffffff;
+  background: var(--app-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --el-bg-color: rgba(255, 255, 255, 0.88);
+  --el-bg-color-page: rgba(247, 251, 255, 0.92);
+  --el-bg-color-overlay: rgba(255, 255, 255, 0.96);
+  --el-fill-color-blank: rgba(255, 255, 255, 0.88);
+  --el-fill-color-light: rgba(229, 239, 252, 0.72);
+  --el-border-color: rgba(181, 207, 245, 0.78);
+  --el-border-color-light: rgba(196, 219, 250, 0.72);
+  --el-text-color-primary: #112031;
+  --el-text-color-regular: #5a6778;
+  --el-mask-color: rgba(15, 23, 42, 0.38);
+}
+
+:root[data-theme="dark"] {
+  --accent-500: #76b8ff;
+  --accent-400: #9fd0ff;
+  --ps-btn-gradient: linear-gradient(135deg, #63b1ff, #2563eb);
+  --ps-btn-gradient-hover: linear-gradient(135deg, #78bcff, #3570f0);
+  --ps-btn-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+  --ps-btn-secondary-bg: rgba(14, 26, 44, 0.78);
+  --ps-btn-secondary-border: rgba(90, 127, 178, 0.42);
+  --text-strong: #e6f0ff;
+  --text-muted: #b5c3d8;
+  --text-subtle: #90a2bb;
+  --shadow-strong: 0 24px 56px rgba(2, 8, 23, 0.46);
+  --shadow-soft: 0 20px 48px rgba(2, 8, 23, 0.26);
+  --app-bg:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.26), transparent 24%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.16), transparent 18%),
+    linear-gradient(180deg, #07101c 0%, #0b1528 52%, #111b31 100%);
+  --surface-elevated: rgba(10, 19, 35, 0.82);
+  --surface-panel: rgba(13, 25, 45, 0.72);
+  --header-bg: rgba(9, 18, 33, 0.82);
+  --header-bg-scrolled: rgba(11, 22, 39, 0.94);
+  --header-border: rgba(86, 121, 170, 0.2);
+  --header-border-strong: rgba(95, 136, 188, 0.32);
+  --header-shadow: 0 18px 42px rgba(2, 8, 23, 0.28);
+  --header-link-hover-bg: rgba(118, 184, 255, 0.12);
+  --nav-active-bg: linear-gradient(135deg, rgba(85, 164, 255, 0.24), rgba(37, 99, 235, 0.2));
+  --theme-toggle-bg: rgba(15, 28, 49, 0.88);
+  --theme-toggle-icon-bg: rgba(118, 184, 255, 0.12);
+  --dropdown-bg: rgba(10, 20, 36, 0.9);
+  --dropdown-hover-bg: rgba(19, 36, 61, 0.96);
+  --el-bg-color: rgba(14, 26, 44, 0.88);
+  --el-bg-color-page: rgba(8, 16, 29, 0.92);
+  --el-bg-color-overlay: rgba(11, 22, 39, 0.96);
+  --el-fill-color-blank: rgba(15, 28, 49, 0.88);
+  --el-fill-color-light: rgba(25, 43, 68, 0.76);
+  --el-border-color: rgba(90, 127, 178, 0.42);
+  --el-border-color-light: rgba(101, 142, 198, 0.28);
+  --el-text-color-primary: #e6f0ff;
+  --el-text-color-regular: #b5c3d8;
+  --el-mask-color: rgba(2, 8, 23, 0.62);
 }
 
 html,
@@ -34,12 +105,16 @@ body {
   width: 100%;
   min-height: 100%;
   overflow-x: hidden;
-  background: #ffffff;
+  background: var(--app-bg);
 }
 
 body {
   min-height: 100vh;
   overflow-x: hidden;
+  color: var(--text-strong);
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
 }
 
 img {
@@ -65,6 +140,7 @@ select {
   margin: 0;
   padding: 0;
   text-align: left;
+  min-height: 100vh;
 }
 
 .ps-btn.el-button,
@@ -130,9 +206,9 @@ select {
 .ps-btn--secondary.el-button:focus-visible,
 .ps-btn-native--secondary:hover,
 .ps-btn-native--secondary:focus-visible {
-  background: #fff;
-  border-color: #cfd8e7;
-  color: #2563eb;
+  background: var(--surface-elevated);
+  border-color: var(--accent-400);
+  color: var(--accent-500);
 }
 
 .ps-btn--danger.el-button,

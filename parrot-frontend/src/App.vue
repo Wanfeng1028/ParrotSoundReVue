@@ -4,12 +4,10 @@
 
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { useAuthStore } from "./stores/auth";
-
-const authStore = useAuthStore();
+import { initThemeMode } from "./composables/useThemeMode";
 
 onMounted(() => {
-  authStore.initialize();
+  initThemeMode();
 });
 </script>
 
