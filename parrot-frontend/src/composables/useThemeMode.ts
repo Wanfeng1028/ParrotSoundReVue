@@ -23,16 +23,7 @@ const applyThemeMode = (mode: ThemeMode) => {
 };
 
 const getInitialThemeMode = (): ThemeMode => {
-  if (typeof window === "undefined") {
-    return "day";
-  }
-
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === "day" || stored === "night") {
-    return stored;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+  return "day";
 };
 
 export const initThemeMode = () => {

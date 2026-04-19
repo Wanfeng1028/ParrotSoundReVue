@@ -22,11 +22,11 @@
       </nav>
 
       <div class="app-header__right">
-        <button type="button" class="theme-switch" @click="toggleThemeMode">
+        <button type="button" class="theme-switch" @click="themeComingSoonVisible = true">
           <el-icon class="theme-switch__icon">
-            <component :is="isDark ? Sunny : Moon" />
+            <Moon />
           </el-icon>
-          <span>{{ isDark ? "夜间模式" : "白天模式" }}</span>
+          <span>夜间模式</span>
         </button>
 
         <template v-if="isLogin">
@@ -74,20 +74,38 @@
       </div>
     </div>
   </header>
+
+  <el-dialog
+    v-model="themeComingSoonVisible"
+    align-center
+    width="min(420px, calc(100vw - 32px))"
+    class="social-coming-dialog"
+    :show-close="false"
+  >
+    <div class="social-coming">
+      <div class="social-coming__badge">开发中</div>
+      <h3>夜间模式</h3>
+      <p>夜间模式正在开发中，后续完成后会在这里直接开放使用。</p>
+      <div class="social-coming__actions">
+        <el-button class="ps-btn ps-btn--primary ps-btn--block" @click="themeComingSoonVisible = false">
+          我知道了
+        </el-button>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { User, Files, SwitchButton, ArrowDown, Sunny, Moon } from "@element-plus/icons-vue";
+import { User, Files, SwitchButton, ArrowDown, Moon } from "@element-plus/icons-vue";
 import { useAuthStore } from "../stores/auth";
-import { useThemeMode } from "../composables/useThemeMode";
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const isScrolled = ref(false);
-const { isDark, toggleThemeMode } = useThemeMode();
+const themeComingSoonVisible = ref(false);
 
 const navItems = [
   { label: "首页", to: "/home" },
@@ -132,6 +150,69 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+:global(.social-coming-dialog) {
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+:global(.social-coming-dialog .el-dialog) {
+  border-radius: 28px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 26px 60px rgba(37, 99, 235, 0.2);
+}
+
+:global(.social-coming-dialog .el-dialog__header) {
+  display: none;
+}
+
+:global(.social-coming-dialog .el-dialog__body) {
+  padding: 0;
+}
+
+.social-coming {
+  padding: 32px 30px 28px;
+  text-align: center;
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 255, 0.98));
+}
+
+.social-coming__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(90, 174, 255, 0.18), rgba(37, 99, 235, 0.12));
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.social-coming h3 {
+  margin: 18px 0 10px;
+  font-size: 28px;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #69b3ff, #2563eb);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.social-coming p {
+  margin: 0;
+  color: #667085;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.social-coming__actions {
+  margin-top: 24px;
+}
+
 .app-header {
   position: fixed;
   top: 0;
