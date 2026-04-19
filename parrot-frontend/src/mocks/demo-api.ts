@@ -328,7 +328,11 @@ export const handleDemoRequest = async <T>(config: AxiosRequestConfig): Promise<
     const language = String(params.language || "all");
     let items = state.voices
       .filter((item) => item.visibility === "public")
-      .filter((item) => !search || `${item.name}${item.description}${item.tag}`.toLowerCase().includes(search))
+      .filter(
+        (item) =>
+          !search ||
+          `${item.name}${item.description}${item.tag}${item.authorName || ""}${item.language}`.toLowerCase().includes(search),
+      )
       .filter((item) => language === "all" || item.language === language)
       .map((item) => ({
         ...item,

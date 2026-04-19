@@ -18,11 +18,36 @@ export const downloadMediaUrl = (url: string, filename?: string) => {
     return;
   }
 
-  const link = document.createElement("a");
-  link.href = target;
-  link.download = filename || "";
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const fallbackDownload = () => {
+    const link = document.createElement("a");
+    link.href = target;
+    link.download = filename || "";
+    link.rel = "noopener";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  fetch(target)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("download failed");
+      }
+      return response.blob();
+    })
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename || "";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    })
+    .catch(() => {
+      fallbackDownload();
+    });
 };

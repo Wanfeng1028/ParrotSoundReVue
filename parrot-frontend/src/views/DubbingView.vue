@@ -48,9 +48,17 @@
           </div>
 
           <div class="toolbar-right">
-            <button type="button" class="current-voice-bubble" v-if="currentVoice" @click="previewCurrentVoice">
+            <button
+              type="button"
+              class="current-voice-bubble"
+              :class="{ 'current-voice-bubble--playing': currentVoice && isVoicePreviewActive(currentVoice.id) }"
+              v-if="currentVoice"
+              @click="previewCurrentVoice"
+            >
               <el-avatar :size="28" :src="currentVoice.avatar || undefined">{{ currentVoice.name.slice(0, 1) }}</el-avatar>
-              <span class="name">{{ currentVoice.name }}</span>
+              <span class="name">
+                {{ currentVoice.name }} · {{ isVoicePreviewActive(currentVoice.id) ? "暂停试听" : "试听音色" }}
+              </span>
             </button>
           </div>
         </div>
@@ -79,7 +87,9 @@
             </el-tag>
           </div>
           <div class="action-right">
-            <el-button class="white-btn ps-btn ps-btn--secondary" @click="handlePlay">试听</el-button>
+            <el-button class="white-btn ps-btn ps-btn--secondary" @click="handlePlay">
+              {{ speakingTextPreview ? "暂停试听" : "试听文稿" }}
+            </el-button>
             <el-button class="gradient-btn ps-btn ps-btn--primary" @click="handleExport">导出音频</el-button>
           </div>
         </div>
@@ -108,7 +118,7 @@
           </div>
           <div class="v-desc">点击卡片即可选中，试听可直接验证真实样音。</div>
           <button type="button" class="voice-preview-btn ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click.stop="previewVoiceSample(voice)">
-            试听音色
+            {{ isVoicePreviewActive(voice.id) ? "暂停试听" : "试听音色" }}
           </button>
         </div>
         <el-empty v-if="!voiceList.length" description="没有匹配的音色" />
@@ -177,9 +187,11 @@ const {
   currentEmotion,
   availableModels,
   selectedModel,
+  speakingTextPreview,
   loadOptions,
   selectVoice,
   selectEmotion,
+  isVoicePreviewActive,
   handleClearText,
   handleFillExample,
   handleSmartSegment,
@@ -323,31 +335,46 @@ onMounted(() => {
   color: #5362bc;
 }
 
+.current-voice-bubble--playing {
+  background: #e8efff;
+  color: #4053c7;
+}
+
 .textarea-container {
   flex: 1;
   position: relative;
   background: rgba(255, 255, 255, 0.82);
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .textarea-tip {
   padding: 14px 20px 0;
   font-size: 13px;
   color: #6f7b90;
+  flex-shrink: 0;
 }
 
 :deep(.main-textarea .el-textarea__inner) {
+  height: 100%;
   min-height: 100%;
   border: none;
   resize: none;
   box-shadow: none;
-  padding: 12px 20px 20px;
+  padding: 12px 20px 52px;
   font-size: 16px;
   line-height: 1.8;
+  box-sizing: border-box;
 }
 
 .main-textarea {
-  height: calc(100% - 34px);
+  flex: 1;
+  min-height: 0;
+}
+
+:deep(.main-textarea .el-textarea) {
+  height: 100%;
 }
 
 .watermark {

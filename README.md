@@ -20,6 +20,16 @@
 
 ![ParrotSound Demo](./docs/demo/ai-workflow.svg)
 
+### 产品演示动图 / GIF Walkthrough
+
+登录、注册、重置密码、核心功能页、用户中心和管理后台统一收录在这一张总览动图里。
+
+![ParrotSound Full Walkthrough](./docs/demo/all-pages.gif)
+
+项目主展示动图：
+
+![ParrotSound Product Demo](./parrot-frontend/public/ParrotSound.gif)
+
 ## 中文文档
 
 ### 项目简介

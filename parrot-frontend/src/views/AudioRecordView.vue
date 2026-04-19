@@ -53,13 +53,19 @@
           <el-icon><VideoPlay /></el-icon>
         </div>
         <div class="progress-wrapper">
-          <el-slider v-model="playProgress" :show-tooltip="false" class="purple-slider" @input="seekRecord" />
+          <el-slider
+            v-model="playProgress"
+            :show-tooltip="false"
+            class="purple-slider"
+            :disabled="isSpeechMode"
+            @input="seekRecord"
+          />
           <span class="time-label">{{ playerTimeLabel }}</span>
         </div>
       </div>
       <div class="player-right">
         <el-button class="p-btn-white ps-btn ps-btn--secondary ps-btn--sm" @click="downloadRecord(currentRecord)">下载</el-button>
-        <el-button class="p-btn-white ps-btn ps-btn--secondary ps-btn--sm" @click="currentRecord = null">关闭</el-button>
+        <el-button class="p-btn-white ps-btn ps-btn--secondary ps-btn--sm" @click="closeCurrentRecord">关闭</el-button>
       </div>
     </div>
   </div>
@@ -80,12 +86,52 @@ const recordList = ref<DubbingJob[]>([]);
 const currentRecord = ref<DubbingJob | null>(null);
 const playerDuration = ref(0);
 const isPlaying = ref(false);
+const isSpeechMode = ref(false);
+const speechDuration = ref(0);
+const speechElapsed = ref(0);
 const page = ref(1);
 const pageSize = ref(8);
 const total = ref(0);
 
 let audioPlayer: HTMLAudioElement | null = null;
+let speechUtterance: SpeechSynthesisUtterance | null = null;
 let searchTimer: number | null = null;
+let speechTimer: number | null = null;
+let speechStartedAt = 0;
+
+const placeholderAudioPaths = ["/api/media/demo-audio", "/api/media/voice-chaowen", "/api/media/voice-xiaoya"];
+
+const clearSpeechTimer = () => {
+  if (speechTimer) {
+    window.clearInterval(speechTimer);
+    speechTimer = null;
+  }
+};
+
+const stopAudioPlayback = () => {
+  audioPlayer?.pause();
+  audioPlayer = null;
+  playerDuration.value = 0;
+};
+
+const stopSpeechPlayback = () => {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+  clearSpeechTimer();
+  speechUtterance = null;
+  speechDuration.value = 0;
+  speechElapsed.value = 0;
+  isSpeechMode.value = false;
+};
+
+const closeCurrentRecord = () => {
+  currentRecord.value = null;
+  stopAudioPlayback();
+  stopSpeechPlayback();
+  isPlaying.value = false;
+  playProgress.value = 0;
+};
 
 const loadRecords = async () => {
   loading.value = true;
@@ -98,11 +144,99 @@ const loadRecords = async () => {
   }
 };
 
-const playRecord = (item: DubbingJob) => {
-  currentRecord.value = item;
-  if (audioPlayer) {
-    audioPlayer.pause();
+const shouldUseSpeechFallback = (item: DubbingJob) =>
+  !!item.text?.trim() && placeholderAudioPaths.some((path) => item.audioUrl === path);
+
+const normalizeVoiceName = (voice: SpeechSynthesisVoice) =>
+  `${voice.name} ${voice.lang} ${voice.voiceURI}`.toLowerCase();
+
+const pickSpeechVoice = (voiceName?: string) => {
+  if (!("speechSynthesis" in window)) {
+    return null;
   }
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) {
+    return null;
+  }
+
+  const chineseVoices = voices.filter((voice) => /zh|cmn/i.test(voice.lang) || /chinese/i.test(voice.name));
+  const pool = chineseVoices.length ? chineseVoices : voices;
+  const normalizedVoiceName = String(voiceName || "").toLowerCase();
+  const keywords = normalizedVoiceName.includes("女")
+    ? ["xiaoxiao", "xiaoyi", "xiaomo", "female", "girl"]
+    : ["yunxi", "yunjian", "junxi", "male", "boy"];
+
+  return pool.find((voice) => keywords.some((keyword) => normalizeVoiceName(voice).includes(keyword))) || pool[0] || null;
+};
+
+const estimateSpeechDuration = (item: DubbingJob) => {
+  const speed = Number(item.settings?.speed || 1);
+  const base = Math.max(3, Math.ceil((item.text?.length || 0) / 4));
+  return Math.max(1, Math.round(base / Math.max(0.5, speed)));
+};
+
+const startSpeechProgress = () => {
+  clearSpeechTimer();
+  speechStartedAt = Date.now() - speechElapsed.value * 1000;
+  speechTimer = window.setInterval(() => {
+    if (!isPlaying.value || !speechDuration.value) {
+      return;
+    }
+
+    speechElapsed.value = Math.min(speechDuration.value, (Date.now() - speechStartedAt) / 1000);
+    playProgress.value = speechDuration.value ? Math.round((speechElapsed.value / speechDuration.value) * 100) : 0;
+  }, 200);
+};
+
+const playSpeechRecord = (item: DubbingJob) => {
+  if (!("speechSynthesis" in window)) {
+    ElMessage.warning("当前浏览器不支持文本朗读");
+    return;
+  }
+
+  const voice = pickSpeechVoice(item.voiceName);
+  if (!voice) {
+    ElMessage.warning("当前浏览器没有可用的中文语音");
+    return;
+  }
+
+  stopAudioPlayback();
+  stopSpeechPlayback();
+  currentRecord.value = item;
+  isSpeechMode.value = true;
+  speechDuration.value = estimateSpeechDuration(item);
+  speechElapsed.value = 0;
+  playProgress.value = 0;
+
+  const utterance = new SpeechSynthesisUtterance(item.text);
+  utterance.voice = voice;
+  utterance.lang = voice.lang || "zh-CN";
+  utterance.rate = Math.min(2, Math.max(0.5, Number(item.settings?.speed || 1)));
+  utterance.pitch = Math.min(2, Math.max(0, Number(item.settings?.pitch || 55) / 50));
+  utterance.volume = Math.min(1, Math.max(0, Number(item.settings?.volume || 80) / 100));
+  utterance.onend = () => {
+    clearSpeechTimer();
+    isPlaying.value = false;
+    speechElapsed.value = speechDuration.value;
+    playProgress.value = 100;
+  };
+  utterance.onerror = () => {
+    stopSpeechPlayback();
+    isPlaying.value = false;
+    ElMessage.warning("文本朗读失败，请稍后重试");
+  };
+
+  speechUtterance = utterance;
+  window.speechSynthesis.speak(utterance);
+  isPlaying.value = true;
+  startSpeechProgress();
+};
+
+const playAudioRecord = (item: DubbingJob) => {
+  currentRecord.value = item;
+  stopSpeechPlayback();
+  stopAudioPlayback();
   audioPlayer = new Audio(resolveMediaUrl(item.audioUrl));
   audioPlayer.ontimeupdate = () => {
     if (!audioPlayer) return;
@@ -122,8 +256,39 @@ const playRecord = (item: DubbingJob) => {
   });
 };
 
+const playRecord = (item: DubbingJob) => {
+  if (shouldUseSpeechFallback(item)) {
+    playSpeechRecord(item);
+    return;
+  }
+
+  playAudioRecord(item);
+};
+
 const togglePlayer = () => {
-  if (!audioPlayer || !currentRecord.value) {
+  if (!currentRecord.value) {
+    return;
+  }
+
+  if (isSpeechMode.value) {
+    if (!("speechSynthesis" in window) || !speechUtterance) {
+      return;
+    }
+
+    if (isPlaying.value) {
+      window.speechSynthesis.pause();
+      clearSpeechTimer();
+      isPlaying.value = false;
+      return;
+    }
+
+    window.speechSynthesis.resume();
+    isPlaying.value = true;
+    startSpeechProgress();
+    return;
+  }
+
+  if (!audioPlayer) {
     return;
   }
 
@@ -141,9 +306,14 @@ const togglePlayer = () => {
 };
 
 const seekRecord = (value: number | number[]) => {
+  if (isSpeechMode.value) {
+    return;
+  }
+
   if (!audioPlayer || Array.isArray(value) || !playerDuration.value) {
     return;
   }
+
   audioPlayer.currentTime = (value / 100) * playerDuration.value;
 };
 
@@ -156,11 +326,7 @@ const removeRecord = async (id: number) => {
   recordList.value = recordList.value.filter((item) => item.id !== id);
   total.value = Math.max(0, total.value - 1);
   if (currentRecord.value?.id === id) {
-    currentRecord.value = null;
-    audioPlayer?.pause();
-    audioPlayer = null;
-    isPlaying.value = false;
-    playProgress.value = 0;
+    closeCurrentRecord();
   }
   ElMessage.success("记录已删除");
 };
@@ -179,9 +345,14 @@ const formatTime = (seconds: number) => {
 };
 
 const playerTimeLabel = computed(() => {
+  if (isSpeechMode.value) {
+    return `${formatTime(speechElapsed.value)} / ${formatTime(speechDuration.value)}`;
+  }
+
   if (!audioPlayer) {
     return currentRecord.value?.status || "--";
   }
+
   return `${formatTime(audioPlayer.currentTime)} / ${formatTime(playerDuration.value)}`;
 });
 
@@ -196,7 +367,8 @@ watch(searchText, () => {
 });
 
 onBeforeUnmount(() => {
-  audioPlayer?.pause();
+  stopAudioPlayback();
+  stopSpeechPlayback();
 });
 
 onMounted(() => {

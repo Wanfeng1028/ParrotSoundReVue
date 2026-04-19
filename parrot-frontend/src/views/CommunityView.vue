@@ -7,7 +7,7 @@
         <div class="filter-group">
           <div class="filter-item">
             <span class="label">排序</span>
-            <el-select v-model="filters.sort" class="custom-select" style="width: 100px" @change="load">
+            <el-select v-model="filters.sort" class="custom-select" style="width: 100px" @change="reloadFromFirstPage">
               <el-option label="推荐" value="recommend" />
               <el-option label="最新" value="newest" />
               <el-option label="最热" value="hot" />
@@ -16,7 +16,7 @@
 
           <div class="filter-item">
             <span class="label">语言</span>
-            <el-select v-model="filters.language" class="custom-select" style="width: 100px" @change="load">
+            <el-select v-model="filters.language" class="custom-select" style="width: 100px" @change="reloadFromFirstPage">
               <el-option label="全部" value="all" />
               <el-option label="中文" value="cn" />
               <el-option label="英语" value="en" />
@@ -24,9 +24,9 @@
           </div>
 
           <div class="search-box">
-            <el-input v-model="filters.search" placeholder="请输入关键词" class="custom-search" @input="debouncedLoad">
+            <el-input v-model="filters.search" placeholder="请输入关键词" class="custom-search" @input="debouncedLoad" @keyup.enter="submitSearch">
               <template #append>
-                <el-button class="search-btn ps-btn ps-btn--secondary ps-btn--sm" @click="load">搜索</el-button>
+                <el-button class="search-btn ps-btn ps-btn--secondary ps-btn--sm" @click="submitSearch">搜索</el-button>
               </template>
             </el-input>
           </div>
@@ -37,7 +37,7 @@
         <div class="left-list" v-loading="loading">
           <div class="voice-card" v-for="item in voiceList" :key="item.id">
             <div class="card-left">
-              <img :src="item.coverUrl || fallbackAvatar" class="voice-avatar" loading="lazy" @click="previewVoice(item.id, item.sampleAudioUrl)" />
+              <img :src="item.coverUrl || fallbackAvatar" class="voice-avatar" loading="lazy" @click="previewVoice(item)" />
             </div>
 
             <div class="card-center">
@@ -51,24 +51,28 @@
               </div>
 
               <div class="play-row">
-                <el-icon class="play-icon" :class="{ active: playingId === item.id }" @click="previewVoice(item.id, item.sampleAudioUrl)">
+                <el-icon class="play-icon" :class="{ active: playingId === item.id }" @click="previewVoice(item)">
                   <CaretRight />
                 </el-icon>
-                <span class="play-wave">{{ item.desc || "点击试听社区样音" }}</span>
+                <span class="play-wave">{{ item.desc || item.description || "点击试听社区文稿" }}</span>
               </div>
 
               <div class="action-bar">
                 <el-button type="primary" class="use-btn ps-btn ps-btn--primary ps-btn--sm" @click="useVoice(item.id)">使用声音</el-button>
-                <el-button plain class="ps-btn ps-btn--secondary ps-btn--sm" @click="likeVoice(item.id)">点赞</el-button>
-                <el-button plain class="ps-btn ps-btn--secondary ps-btn--sm" @click="favoriteVoice(item.id)">收藏</el-button>
+                <el-button plain class="ps-btn ps-btn--secondary ps-btn--sm action-toggle" :class="{ active: isLiked(item.id) }" @click="likeVoice(item.id)">
+                  {{ isLiked(item.id) ? "已点赞" : "点赞" }}
+                </el-button>
+                <el-button plain class="ps-btn ps-btn--secondary ps-btn--sm action-toggle" :class="{ active: isFavorited(item.id) }" @click="favoriteVoice(item.id)">
+                  {{ isFavorited(item.id) ? "已收藏" : "收藏" }}
+                </el-button>
               </div>
             </div>
 
             <div class="card-right-stats">
               <div class="stat-item"><el-icon><VideoPlay /></el-icon> {{ item.stats.play }}</div>
-              <div class="stat-item red"><el-icon><StarFilled /></el-icon> {{ item.stats.like }}</div>
+              <div class="stat-item red" :class="{ active: isLiked(item.id) }"><el-icon><StarFilled /></el-icon> {{ item.stats.like }}</div>
               <div class="stat-item"><el-icon><Share /></el-icon> {{ item.stats.use }}</div>
-              <div class="stat-item yellow"><el-icon><Star /></el-icon> {{ item.stats.favorite }}</div>
+              <div class="stat-item yellow" :class="{ active: isFavorited(item.id) }"><el-icon><Star /></el-icon> {{ item.stats.favorite }}</div>
             </div>
           </div>
 
@@ -128,7 +132,11 @@ const {
   pageSize,
   total,
   load,
+  reloadFromFirstPage,
   debouncedLoad,
+  submitSearch,
+  isLiked,
+  isFavorited,
   previewVoice,
   likeVoice,
   favoriteVoice,
@@ -171,8 +179,10 @@ onMounted(() => {
 .play-wave { font-size: 12px; letter-spacing: 1px; color: #666; }
 .action-bar { display: flex; gap: 10px; }
 .use-btn { width: 112px; }
+.action-toggle.active { color: #5362bc; border-color: rgba(83, 98, 188, 0.45); background: rgba(83, 98, 188, 0.08); }
 .card-right-stats { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 20px; color: #666; font-size: 13px; }
 .stat-item { display: flex; align-items: center; gap: 4px; }
+.stat-item.active { font-weight: 700; transform: translateY(-1px); }
 .red { color: #f56c6c; }
 .yellow { color: #e6a23c; }
 .right-rank { width: 280px; background-color: #f0f2f5; border-radius: 12px; padding: 20px; height: fit-content; }
