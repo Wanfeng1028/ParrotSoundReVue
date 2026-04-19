@@ -47,53 +47,29 @@
 
       <div class="cards-container">
         <el-row :gutter="40">
-          <el-col :span="12" class="grid-col">
-            <div class="tech-item">
+          <el-col v-for="item in featureCards.slice(0, 2)" :key="item.title" :span="12" class="grid-col">
+            <div class="tech-item" @click="openFeature(item.route)">
               <div class="img-box">
                 <picture>
-                  <source :srcset="techCardOne.webp" type="image/webp" />
-                  <img :src="techCardOne.png" alt="现场录音功能" loading="lazy" />
+                  <source :srcset="item.webp" type="image/webp" />
+                  <img :src="item.png" :alt="item.title" loading="lazy" />
                 </picture>
               </div>
-              <div class="tech-item__footer">现场录音功能</div>
-            </div>
-          </el-col>
-
-          <el-col :span="12" class="grid-col">
-            <div class="tech-item">
-              <div class="img-box">
-                <picture>
-                  <source :srcset="techCardTwo.webp" type="image/webp" />
-                  <img :src="techCardTwo.png" alt="标准音频预设" loading="lazy" />
-                </picture>
-              </div>
-              <div class="tech-item__footer">标准音频预设</div>
+              <div class="tech-item__footer">{{ item.title }}</div>
             </div>
           </el-col>
         </el-row>
 
         <el-row :gutter="40">
-          <el-col :span="12" class="grid-col">
-            <div class="tech-item">
+          <el-col v-for="item in featureCards.slice(2)" :key="item.title" :span="12" class="grid-col">
+            <div class="tech-item" @click="openFeature(item.route)">
               <div class="img-box">
                 <picture>
-                  <source :srcset="techCardThree.webp" type="image/webp" />
-                  <img :src="techCardThree.png" alt="定制化语音讲解" loading="lazy" />
+                  <source :srcset="item.webp" type="image/webp" />
+                  <img :src="item.png" :alt="item.title" loading="lazy" />
                 </picture>
               </div>
-              <div class="tech-item__footer">定制化语音讲解</div>
-            </div>
-          </el-col>
-
-          <el-col :span="12" class="grid-col">
-            <div class="tech-item">
-              <div class="img-box">
-                <picture>
-                  <source :srcset="techCardFour.webp" type="image/webp" />
-                  <img :src="techCardFour.png" alt="音频文件上传" loading="lazy" />
-                </picture>
-              </div>
-              <div class="tech-item__footer">音频文件上传</div>
+              <div class="tech-item__footer">{{ item.title }}</div>
             </div>
           </el-col>
         </el-row>
@@ -109,8 +85,8 @@
 
       <div class="carousel-container">
         <el-carousel :interval="4000" type="card" height="400px" indicator-position="outside">
-          <el-carousel-item v-for="(item, index) in carouselItems" :key="index">
-            <div class="custom-card">
+          <el-carousel-item v-for="item in carouselItems" :key="item.title">
+            <div class="custom-card" @click="openFeature(item.route)">
               <div class="card-header">{{ item.title }}</div>
 
               <div class="card-img-box">
@@ -162,23 +138,6 @@ const bannerImageWebp = new URL("../assets/images/banner-computer.webp", import.
 const bannerImageJpg = new URL("../assets/images/banner-computer.jpg", import.meta.url).href;
 const techBannerWebp = new URL("../assets/images/tech-banner.webp", import.meta.url).href;
 const techBannerPng = new URL("../assets/images/tech-banner.png", import.meta.url).href;
-const techCardOne = {
-  webp: new URL("../assets/images/tech-1.webp", import.meta.url).href,
-  png: new URL("../assets/images/tech-1.png", import.meta.url).href,
-};
-const techCardTwo = {
-  webp: new URL("../assets/images/tech-2.webp", import.meta.url).href,
-  png: new URL("../assets/images/tech-2.png", import.meta.url).href,
-};
-const techCardThree = {
-  webp: new URL("../assets/images/tech-3.webp", import.meta.url).href,
-  png: new URL("../assets/images/tech-3.png", import.meta.url).href,
-};
-const techCardFour = {
-  webp: new URL("../assets/images/tech-4.webp", import.meta.url).href,
-  png: new URL("../assets/images/tech-4.png", import.meta.url).href,
-};
-
 const { text } = useTypeWriter("鹦音坊 AI 语音平台", 100, 500);
 const { text: title } = useTypeWriter("强大的核心技术", 150, 1000);
 const { text: titleThree } = useTypeWriter(
@@ -192,33 +151,65 @@ const { text: titleFour } = useTypeWriter(
   1000,
 );
 
+const featureCards = [
+  {
+    title: "现场录音功能",
+    route: "/clone",
+    webp: new URL("../assets/images/tech-1.webp", import.meta.url).href,
+    png: new URL("../assets/images/tech-1.png", import.meta.url).href,
+  },
+  {
+    title: "标准音频预设",
+    route: "/dubbing",
+    webp: new URL("../assets/images/tech-2.webp", import.meta.url).href,
+    png: new URL("../assets/images/tech-2.png", import.meta.url).href,
+  },
+  {
+    title: "定制化语音讲解",
+    route: "/teaching",
+    webp: new URL("../assets/images/tech-3.webp", import.meta.url).href,
+    png: new URL("../assets/images/tech-3.png", import.meta.url).href,
+  },
+  {
+    title: "音频文件上传",
+    route: "/audio-record",
+    webp: new URL("../assets/images/tech-4.webp", import.meta.url).href,
+    png: new URL("../assets/images/tech-4.png", import.meta.url).href,
+  },
+];
+
 const carouselItems = [
   {
     title: "声音置换与字幕",
+    route: "/dubbing",
     img: new URL("../assets/images/course-1.png", import.meta.url).href,
     webp: new URL("../assets/images/course-1.webp", import.meta.url).href,
     desc: "自动识别语音内容并生成字幕，支持多语种声音一键置换，保留原视频背景音。",
   },
   {
     title: "3D数字人",
+    route: "/community",
     img: new URL("../assets/images/course-2.png", import.meta.url).href,
     webp: new URL("../assets/images/course-2.webp", import.meta.url).href,
     desc: "高精度3D虚拟数字人形象，支持表情驱动与动作捕捉，打造沉浸式教学体验。",
   },
   {
     title: "语音合成",
+    route: "/dubbing",
     img: new URL("../assets/images/course-3.png", import.meta.url).href,
     webp: new URL("../assets/images/course-3.webp", import.meta.url).href,
     desc: "依托语音生成、数字人讲解及多模态内容生成，全面支持教师与学生的互动式学习需求。",
   },
   {
     title: "声音克隆",
+    route: "/clone",
     img: new URL("../assets/images/course-4.png", import.meta.url).href,
     webp: new URL("../assets/images/course-4.webp", import.meta.url).href,
     desc: "只需少量音频数据即可快速克隆目标声音，还原度高，适用于个性化配音场景。",
   },
   {
     title: "有声课件",
+    route: "/teaching",
     img: new URL("../assets/images/course-5.png", import.meta.url).href,
     webp: new URL("../assets/images/course-5.webp", import.meta.url).href,
     desc: "将传统PPT快速转化为带有智能配音的有声视频课件，提升教学资源制作效率。",
@@ -231,6 +222,10 @@ const handleStartUsing = () => {
 
 const handleLearnMore = () => {
   router.push("/help");
+};
+
+const openFeature = (routePath: string) => {
+  router.push(routePath);
 };
 </script>
 
@@ -463,6 +458,7 @@ const handleLearnMore = () => {
   display: flex;
   flex-direction: column;
   position: relative;
+  cursor: pointer;
 }
 
 .card-header {

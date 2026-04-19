@@ -30,10 +30,21 @@ export const useLoginLogic = () => {
     router.push(redirect);
   };
 
+  const handleSocialLogin = async (provider: "google" | "facebook" | "microsoft" | "x" | "apple", label: string) => {
+    await authStore.loginWithSocialProvider(provider);
+    ElMessage.success({
+      message: `${label}成功`,
+      grouping: true,
+    });
+    const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/dubbing";
+    router.push(redirect);
+  };
+
   return {
     loading: authStore.loading,
     loginForm,
     hanadleLogin,
+    handleSocialLogin,
     frontendDemoEnabled: authStore.frontendDemoEnabled,
     frontendDemoAccount: authStore.frontendDemoAccount,
   };

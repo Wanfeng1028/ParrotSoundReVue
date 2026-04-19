@@ -108,23 +108,56 @@
           </div>
 
           <div class="track-timeline-box" v-show="isTrackExpanded">
-            <div class="timeline-ruler">
-              <span>00:00</span>
-              <span style="left: 200px">00:30</span>
-              <span style="left: 400px">01:00</span>
-              <div class="play-head-line"></div>
+            <div class="timeline-summary">
+              <span>总时长 {{ timelineDurationLabel }}</span>
+              <span>{{ slides.length }} 页内容</span>
+              <span>当前页：{{ activeSlideIndex + 1 }}</span>
             </div>
-            <div class="tracks-container">
-              <div class="track-row">
-                <div class="track-header"><el-icon><Edit /></el-icon></div>
-                <div class="track-body">
-                  <div class="clip text-clip" :style="{ width: `${Math.max(180, textContent.length * 4)}px` }"></div>
-                </div>
+            <div class="tracks-scroller">
+              <div class="timeline-ruler" :style="{ width: `${timelineWidth}px` }">
+                <span
+                  v-for="marker in timelineMarkers"
+                  :key="marker.second"
+                  :style="{ left: `${marker.left}px` }"
+                >
+                  {{ marker.label }}
+                </span>
+                <div class="play-head-line" :style="{ left: `${activeTimelineOffset}px` }"></div>
               </div>
-              <div class="track-row">
-                <div class="track-header"><el-icon><Microphone /></el-icon></div>
-                <div class="track-body">
-                  <div class="clip audio-clip" :style="{ width: `${Math.max(140, textContent.length * 3)}px` }"></div>
+              <div class="tracks-container" :style="{ width: `${timelineWidth}px` }">
+                <div class="track-row">
+                  <div class="track-header"><el-icon><Edit /></el-icon></div>
+                  <div class="track-body">
+                    <button
+                      v-for="clip in timelineSlides"
+                      :key="`${clip.id}-text`"
+                      type="button"
+                      class="clip text-clip"
+                      :class="{ 'is-active': clip.isActive }"
+                      :style="{ left: `${clip.left}px`, width: `${clip.width}px` }"
+                      @click="selectTimelineClip(clip.index)"
+                    >
+                      <span class="clip-title">{{ clip.title }}</span>
+                      <span class="clip-time">{{ clip.durationLabel }}</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="track-row">
+                  <div class="track-header"><el-icon><Microphone /></el-icon></div>
+                  <div class="track-body">
+                    <button
+                      v-for="clip in timelineSlides"
+                      :key="`${clip.id}-audio`"
+                      type="button"
+                      class="clip audio-clip"
+                      :class="{ 'is-active': clip.isActive }"
+                      :style="{ left: `${clip.left}px`, width: `${clip.width}px` }"
+                      @click="selectTimelineClip(clip.index)"
+                    >
+                      <span class="clip-title">{{ selectedVoiceName || "未选择声音" }}</span>
+                      <span class="clip-time">{{ clip.durationLabel }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -217,6 +250,11 @@ const {
   settings,
   activeSlideIndex,
   slides,
+  timelineSlides,
+  timelineMarkers,
+  timelineWidth,
+  activeTimelineOffset,
+  timelineDurationLabel,
   showSubtitle,
   isTrackExpanded,
   textContent,
@@ -248,6 +286,7 @@ const {
   importFiles,
   addSlide,
   selectSlide,
+  selectTimelineClip,
   handleSaveCurrentSlide,
   toggleTeachingMode,
   selectResourceTab,
@@ -309,16 +348,25 @@ onMounted(() => {
 .clear-btn { font-size: 12px; color: #999; display: flex; align-items: center; gap: 8px; }
 .stats { margin-left: auto; font-size: 12px; color: #999; margin-right: 20px; }
 .track-timeline-box { height: 100%; display: flex; flex-direction: column; background: #fff; }
-.timeline-ruler { height: 24px; border-bottom: 1px solid #eee; position: relative; font-size: 10px; color: #999; background: #fcfcfc; padding-left: 40px; }
-.timeline-ruler span { position: absolute; top: 4px; }
-.play-head-line { position: absolute; left: 200px; top: 0; bottom: -300px; width: 1px; background: #666; z-index: 10; }
-.tracks-container { flex: 1; overflow-y: auto; padding: 10px 0; }
-.track-row { height: 44px; display: flex; margin-bottom: 4px; }
-.track-header { width: 40px; border-right: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: #555; }
-.track-body { flex: 1; position: relative; background: rgba(0,0,0,0.02); }
-.clip { position: absolute; top: 4px; bottom: 4px; border-radius: 4px; cursor: pointer; left: 0; }
-.text-clip { background: #d9ecff; border: 1px solid #a0cfff; }
-.audio-clip { background: #e1f3d8; border: 1px solid #b3e19d; }
+.timeline-summary { height: 36px; display: flex; align-items: center; gap: 18px; padding: 0 16px; font-size: 12px; color: #6b7280; border-bottom: 1px solid #eef2ff; background: #fbfcff; }
+.tracks-scroller { flex: 1; overflow: auto; }
+.timeline-ruler { height: 28px; border-bottom: 1px solid #eee; position: relative; font-size: 10px; color: #94a3b8; background: #fcfcfc; }
+.timeline-ruler span { position: absolute; top: 6px; transform: translateX(-50%); }
+.play-head-line { position: absolute; top: 0; bottom: -168px; width: 2px; background: rgba(83, 98, 188, 0.7); z-index: 10; box-shadow: 0 0 0 1px rgba(255,255,255,0.85); }
+.tracks-container { padding: 12px 0; }
+.track-row { height: 72px; display: flex; margin-bottom: 8px; }
+.track-header { width: 52px; border-right: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: #555; background: #fbfcff; }
+.track-body { flex: 1; position: relative; background:
+  linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px) 0 0 / 18px 100%,
+  linear-gradient(90deg, rgba(99, 102, 241, 0.12) 1px, transparent 1px) 0 0 / 90px 100%,
+  linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(255,255,255,0.95));
+}
+.clip { position: absolute; top: 10px; bottom: 10px; border-radius: 12px; cursor: pointer; padding: 8px 12px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; border: 1px solid transparent; box-sizing: border-box; }
+.clip-title { font-size: 12px; font-weight: 700; line-height: 1.2; text-align: left; }
+.clip-time { font-size: 11px; opacity: 0.78; }
+.clip.is-active { box-shadow: 0 10px 24px rgba(83, 98, 188, 0.18); transform: translateY(-1px); }
+.text-clip { background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-color: #93c5fd; color: #1d4ed8; }
+.audio-clip { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-color: #86efac; color: #166534; }
 .right-sidebar { width: 360px; background: #fff; border-left: 1px solid #e0e0e0; display: flex; }
 .resource-panel { flex: 1; padding: 15px; display: flex; flex-direction: column; overflow-y: auto; }
 .search-row { margin-bottom: 12px; }

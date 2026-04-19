@@ -1,11 +1,22 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { ElMessage } from "element-plus";
 import { useAuthStore } from "../stores/auth";
+import { isAdminAuthenticated } from "../utils/admin-session";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: "/", redirect: "/home" },
+    { path: "/admin/login", name: "admin-login", component: () => import("../views/AdminDashboard/AdminLogin.vue") },
+    {
+      path: "/admin",
+      component: () => import("../layouts/MainLayout.vue"),
+      meta: { requiresAdmin: true },
+      children: [
+        { path: "", redirect: "/admin/dashboard" },
+        { path: "dashboard", name: "admin-dashboard", component: () => import("../views/AdminDashboard/AdminDashboard.vue") },
+        { path: "profile", name: "admin-profile", component: () => import("../views/AdminDashboard/UserInfo.vue") },
+      ],
+    },
     {
       path: "/",
       component: () => import("../layouts/PublicLayout.vue"),
@@ -46,6 +57,12 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const authStore = useAuthStore();
+  if (to.meta.requiresAdmin && !isAdminAuthenticated()) {
+    return { path: "/admin/login", query: { redirect: to.fullPath } };
+  }
+  if (isAdminAuthenticated() && to.path === "/admin/login") {
+    return { path: "/admin/dashboard" };
+  }
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return { path: "/login", query: { redirect: to.fullPath } };
   }
@@ -53,12 +70,6 @@ router.beforeEach((to) => {
     return { path: "/dubbing" };
   }
   return true;
-});
-
-router.afterEach(() => {
-  window.setTimeout(() => {
-    ElMessage.closeAll();
-  }, 0);
 });
 
 export default router;

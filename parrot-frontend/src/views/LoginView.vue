@@ -110,35 +110,14 @@
       </div>
     </section>
 
-    <el-dialog
-      v-model="socialComingSoonVisible"
-      align-center
-      width="min(420px, calc(100vw - 32px))"
-      class="social-coming-dialog"
-      :show-close="false"
-    >
-      <div class="social-coming">
-        <div class="social-coming__badge">开发中</div>
-        <h3>{{ socialComingLabel }}</h3>
-        <p>该第三方登录入口目前还在开发中，后续接入完成后会在这里直接启用。</p>
-        <div class="social-coming__actions">
-          <el-button class="ps-btn ps-btn--primary ps-btn--block" @click="socialComingSoonVisible = false">
-            我知道了
-          </el-button>
-        </div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { Message, Lock } from "@element-plus/icons-vue";
 import { useLoginLogic } from "../composables/useLoginLogic";
 
-const { loading, hanadleLogin, loginForm, frontendDemoEnabled, frontendDemoAccount } = useLoginLogic();
-const socialComingSoonVisible = ref(false);
-const socialComingLabel = ref("第三方登录");
+const { loading, hanadleLogin, handleSocialLogin, loginForm, frontendDemoEnabled, frontendDemoAccount } = useLoginLogic();
 
 const loginBgWebp = new URL("../assets/images/login-signup-bg.webp", import.meta.url).href;
 const loginBgPng = new URL("../assets/images/login-signup-bg.png", import.meta.url).href;
@@ -157,74 +136,7 @@ const fillDemoAccount = () => {
   loginForm.email = frontendDemoAccount.email;
   loginForm.password = frontendDemoAccount.password;
 };
-
-const handleSocialLogin = (_provider: SocialProviderKey, label: string) => {
-  socialComingLabel.value = label;
-  socialComingSoonVisible.value = true;
-};
 </script>
 
 <style scoped>
-:global(.social-coming-dialog) {
-  border-radius: 28px;
-  overflow: hidden;
-}
-
-:global(.social-coming-dialog .el-dialog) {
-  border-radius: 28px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 26px 60px rgba(37, 99, 235, 0.2);
-}
-
-:global(.social-coming-dialog .el-dialog__header) {
-  display: none;
-}
-
-:global(.social-coming-dialog .el-dialog__body) {
-  padding: 0;
-}
-
-.social-coming {
-  padding: 32px 30px 28px;
-  text-align: center;
-  background:
-    radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 255, 0.98));
-}
-
-.social-coming__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 96px;
-  height: 34px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(90, 174, 255, 0.18), rgba(37, 99, 235, 0.12));
-  color: #2563eb;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.social-coming h3 {
-  margin: 18px 0 10px;
-  font-size: 28px;
-  line-height: 1.2;
-  background: linear-gradient(135deg, #69b3ff, #2563eb);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.social-coming p {
-  margin: 0;
-  color: #667085;
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-.social-coming__actions {
-  margin-top: 24px;
-}
 </style>

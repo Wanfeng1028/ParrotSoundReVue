@@ -20,11 +20,14 @@ const messageDefaults = {
 const patchMessageMethod = (method: "success" | "warning" | "info" | "error" | "primary") => {
   const original = ElMessage[method].bind(ElMessage);
   ElMessage[method] = ((options: string | Record<string, unknown>) =>
-    original(
-      typeof options === "string"
-        ? { message: options, ...messageDefaults }
-        : { ...messageDefaults, ...options },
-    )) as typeof ElMessage[typeof method];
+    {
+      ElMessage.closeAll();
+      return original(
+        typeof options === "string"
+          ? { message: options, ...messageDefaults }
+          : { ...messageDefaults, ...options },
+      );
+    }) as typeof ElMessage[typeof method];
 };
 
 patchMessageMethod("success");

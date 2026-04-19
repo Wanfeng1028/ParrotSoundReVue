@@ -18,6 +18,20 @@ type TeachingResource = {
   voiceId?: number | null;
 };
 
+const timelinePixelsPerSecond = 18;
+
+const estimateNarrationSeconds = (script: string, fallbackLabel = "") => {
+  const normalized = `${script || fallbackLabel}`.replace(/\s+/g, "");
+  return Math.max(6, Math.ceil(normalized.length / 4.2));
+};
+
+const formatTimelineTime = (seconds: number) => {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minute = String(Math.floor(safe / 60)).padStart(2, "0");
+  const second = String(safe % 60).padStart(2, "0");
+  return `${minute}:${second}`;
+};
+
 const createSlide = (index: number, sourceName = ""): TeachingSlide => ({
   id: `slide-${Date.now()}-${index}`,
   title: `第 ${index + 1} 页`,
@@ -68,6 +82,68 @@ export function useEducationLogic() {
   let searchTimer: number | null = null;
 
   const activeSlide = computed(() => slides.value[activeSlideIndex.value] || slides.value[0]);
+  const timelineSlides = computed(() => {
+    let cursor = 0;
+
+    return slides.value.map((slide, index) => {
+      const durationSeconds = estimateNarrationSeconds(slide.script, slide.title || `第 ${index + 1} 页`);
+      const startSeconds = cursor;
+      const endSeconds = startSeconds + durationSeconds;
+      cursor = endSeconds;
+
+      return {
+        id: slide.id,
+        index,
+        title: slide.title || `第 ${index + 1} 页`,
+        script: slide.script || "",
+        durationSeconds,
+        durationLabel: formatTimelineTime(durationSeconds),
+        startSeconds,
+        endSeconds,
+        left: startSeconds * timelinePixelsPerSecond,
+        width: Math.max(140, durationSeconds * timelinePixelsPerSecond),
+        isActive: index === activeSlideIndex.value,
+      };
+    });
+  });
+
+  const timelineDurationSeconds = computed(
+    () => Math.max(30, timelineSlides.value[timelineSlides.value.length - 1]?.endSeconds || 0),
+  );
+
+  const timelineWidth = computed(
+    () => Math.max(960, timelineDurationSeconds.value * timelinePixelsPerSecond + 120),
+  );
+
+  const timelineMarkers = computed(() => {
+    const markers: Array<{ second: number; label: string; left: number }> = [];
+    const markerStep = 15;
+
+    for (let second = 0; second <= timelineDurationSeconds.value; second += markerStep) {
+      markers.push({
+        second,
+        label: formatTimelineTime(second),
+        left: second * timelinePixelsPerSecond,
+      });
+    }
+
+    const lastMarker = markers[markers.length - 1];
+    if (!lastMarker || lastMarker.second !== timelineDurationSeconds.value) {
+      markers.push({
+        second: timelineDurationSeconds.value,
+        label: formatTimelineTime(timelineDurationSeconds.value),
+        left: timelineDurationSeconds.value * timelinePixelsPerSecond,
+      });
+    }
+
+    return markers;
+  });
+
+  const activeTimelineOffset = computed(
+    () => timelineSlides.value[activeSlideIndex.value]?.left || 0,
+  );
+
+  const timelineDurationLabel = computed(() => formatTimelineTime(timelineDurationSeconds.value));
 
   const selectedAvatarName = computed(
     () => avatarResources.find((item) => item.id === selectedAvatarId.value)?.name || "未选择数字人",
@@ -245,6 +321,10 @@ export function useEducationLogic() {
     syncEditorFromSlide();
   };
 
+  const selectTimelineClip = (index: number) => {
+    selectSlide(index);
+  };
+
   const addSlide = () => {
     slides.value.push(createSlide(slides.value.length));
     selectSlide(slides.value.length - 1);
@@ -383,6 +463,11 @@ export function useEducationLogic() {
     settings,
     activeSlideIndex,
     slides,
+    timelineSlides,
+    timelineMarkers,
+    timelineWidth,
+    activeTimelineOffset,
+    timelineDurationLabel,
     showSubtitle,
     isTrackExpanded,
     textContent,
@@ -414,6 +499,7 @@ export function useEducationLogic() {
     importFiles,
     addSlide,
     selectSlide,
+    selectTimelineClip,
     handleSaveCurrentSlide,
     toggleTeachingMode,
     selectResourceTab,
