@@ -145,7 +145,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.community-container { min-height: calc(100vh - 60px); background-color: #f0f2f5; padding: 30px; display: flex; justify-content: center; }
+.community-container { min-height: var(--page-shell-min-height); background-color: #f0f2f5; padding: 30px; display: flex; justify-content: center; box-sizing: border-box; }
 .main-card { width: 1200px; background-color: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); padding: 30px 40px; display: flex; flex-direction: column; }
 .header-bar { display: flex; align-items: center; margin-bottom: 30px; }
 .page-title { font-size: 24px; font-weight: bold; color: #333; margin-right: auto; }

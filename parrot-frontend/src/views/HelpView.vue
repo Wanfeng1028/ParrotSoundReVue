@@ -137,7 +137,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.help-container { min-height: calc(100vh - 60px); background-color: #f0f2f5; padding: 40px; display: flex; justify-content: center; }
+.help-container { min-height: var(--page-shell-min-height); background-color: #f0f2f5; padding: 40px; display: flex; justify-content: center; box-sizing: border-box; }
 .help-card { width: 1000px; background: #fff; border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
 .help-header { margin-bottom: 30px; display: flex; align-items: baseline; gap: 15px; }
 .main-title { font-size: 24px; font-weight: bold; color: #333; }

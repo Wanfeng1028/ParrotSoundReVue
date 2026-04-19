@@ -2,6 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { exportDubbing, fetchDubbingOptions, generateDubbingDraft, previewDubbing } from "../api/dubbing";
 import { waitForTask } from "../api/tasks";
+import { downloadMediaUrl, resolveMediaUrl } from "../utils/media";
 
 interface VoiceOption {
   id: number;
@@ -29,6 +30,7 @@ const acronymDictionary: Array<[RegExp, string]> = [
 
 const chineseDigits = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"] as const;
 const unitMap = ["", "十", "百", "千"] as const;
+const exampleDubbingText = `大家好，欢迎来到 ParrotSound 智能配音台。今天我们用一段完整的示例文稿，快速体验从文本处理、音色选择到试听导出的整个流程。你可以先点击右侧音色卡片切换声音，再试试智能分段、数字转换和情感切换，最后导出音频并到音频记录页查看结果。`;
 
 function convertIntegerToChinese(value: number) {
   if (value === 0) {
@@ -130,7 +132,7 @@ export function useDubbingLogic() {
   });
 
   const playAudio = (url: string) => {
-    const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}${url}`);
+    const audio = new Audio(resolveMediaUrl(url));
     audio.play().catch(() => {
       ElMessage.warning("音频无法播放，请稍后重试");
     });
@@ -151,6 +153,12 @@ export function useDubbingLogic() {
     }
     textContent.value = "";
     ElMessage.success("文案已清空");
+  };
+
+  const handleFillExample = () => {
+    textContent.value = exampleDubbingText;
+    aiInput.value = "生成一段适合产品演示的中文配音稿";
+    ElMessage.success("已填入示例文案，可直接测试配音流程");
   };
 
   const handleSmartSegment = () => {
@@ -292,6 +300,12 @@ export function useDubbingLogic() {
     ElMessage.success(`正在试听 ${currentVoice.value.name}`);
   };
 
+  const previewVoiceSample = (voice: VoiceOption) => {
+    currentVoice.value = voice;
+    playAudio(voice.sampleAudioUrl);
+    ElMessage.success(`正在试听 ${voice.name}`);
+  };
+
   const cycleEmotion = () => {
     if (!emotionList.value.length) {
       return;
@@ -334,7 +348,8 @@ export function useDubbingLogic() {
     });
     const task = await waitForTask<{ audioUrl: string }>(response.data.taskId);
     if (task.result && typeof task.result === "object" && "audioUrl" in task.result) {
-      playAudio(String(task.result.audioUrl));
+      const filename = `${(textContent.value.slice(0, 12) || "导出音频").replace(/[\\/:*?"<>|]/g, "_")}.mp3`;
+      downloadMediaUrl(String(task.result.audioUrl), filename);
     }
     ElMessage.success("导出成功，已同步到音频记录");
   };
@@ -375,6 +390,7 @@ export function useDubbingLogic() {
     selectVoice,
     selectEmotion,
     handleClearText,
+    handleFillExample,
     handleSmartSegment,
     handleLiaison,
     handleInsertPause,
@@ -382,6 +398,7 @@ export function useDubbingLogic() {
     handleNumberNormalize,
     handlePhraseNormalize,
     previewCurrentVoice,
+    previewVoiceSample,
     cycleEmotion,
     handlePlay,
     handleExport,

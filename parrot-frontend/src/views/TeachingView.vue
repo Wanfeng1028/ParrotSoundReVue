@@ -272,7 +272,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.edu-container { display: flex; height: calc(100vh - 60px); background-color: #f0f2f5; overflow: hidden; }
+.edu-container { display: flex; height: var(--page-shell-min-height); background-color: #f0f2f5; overflow: hidden; box-sizing: border-box; }
 .left-sidebar { width: 130px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 12px 8px; gap: 12px; }
 .mode-switch-btn, .apply-btn, .import-btn { width: 100%; font-size: 13px; }
 .hidden-file-input { display: none; }

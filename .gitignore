@@ -7,6 +7,7 @@ dist/
 *.log
 coverage/
 tmp/
+runlogs/
 uploads/
 parrot-frontend/node_modules/
 parrot-frontend/dist/

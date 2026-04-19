@@ -13,6 +13,11 @@ const router = express.Router();
 
 router.use(authRequired);
 
+const getVoiceById = (voiceId, userId) =>
+  repository
+    .publicBase()
+    .voices.find((item) => item.id === Number(voiceId) && (item.visibility === "public" || item.userId === userId));
+
 router.get("/options", async (req, res, next) => {
   try {
     const cacheKey = `dubbing:${req.user.id}:options`;
@@ -67,6 +72,8 @@ router.post("/ai-generate", aiLimiter, async (req, res, next) => {
 router.post("/preview", exportLimiter, (req, res) => {
   const text = String(req.body.text || "").trim();
   if (!text) return fail(res, 400, "请输入配音文案");
+  const voice = getVoiceById(req.body.voiceId, req.user.id);
+  if (!voice) return fail(res, 404, "请选择有效的音色", 404);
   const task = enqueueTask({
     type: "dubbing-preview",
     userId: req.user.id,
@@ -77,9 +84,10 @@ router.post("/preview", exportLimiter, (req, res) => {
         type: "audio",
         title: req.body.title || `${text.slice(0, 12)}${text.length > 12 ? "..." : ""}`,
         text,
-        voiceId: req.body.voiceId,
+        voiceId: voice.id,
+        voiceName: voice.name,
         status: "completed",
-        audioUrl: "/api/media/demo-audio",
+        audioUrl: voice.sampleAudioUrl || "/api/media/demo-audio",
         settings: req.body.settings || {},
       });
       await cacheDelByPrefix(`users:${req.user.id}:history`);
@@ -93,6 +101,8 @@ router.post("/preview", exportLimiter, (req, res) => {
 router.post("/export", exportLimiter, (req, res) => {
   const text = String(req.body.text || "").trim();
   if (!text) return fail(res, 400, "请输入导出文案");
+  const voice = getVoiceById(req.body.voiceId, req.user.id);
+  if (!voice) return fail(res, 404, "请选择有效的音色", 404);
   const task = enqueueTask({
     type: "dubbing-export",
     userId: req.user.id,
@@ -103,9 +113,10 @@ router.post("/export", exportLimiter, (req, res) => {
         type: "audio",
         title: req.body.title || "导出音频",
         text,
-        voiceId: req.body.voiceId,
+        voiceId: voice.id,
+        voiceName: voice.name,
         status: "completed",
-        audioUrl: "/api/media/demo-audio",
+        audioUrl: voice.sampleAudioUrl || "/api/media/demo-audio",
         settings: req.body.settings || {},
       });
       repository.createNotification({

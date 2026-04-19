@@ -65,6 +65,7 @@ export interface DubbingJob {
   title: string;
   text: string;
   voiceId: number | null;
+  voiceName?: string;
   status: "processing" | "completed";
   audioUrl: string;
   createdAt: string;

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { ElMessage } from "element-plus";
 import { useAuthStore } from "../stores/auth";
 
 const router = createRouter({
@@ -52,6 +53,12 @@ router.beforeEach((to) => {
     return { path: "/dubbing" };
   }
   return true;
+});
+
+router.afterEach(() => {
+  window.setTimeout(() => {
+    ElMessage.closeAll();
+  }, 0);
 });
 
 export default router;

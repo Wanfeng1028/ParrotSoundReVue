@@ -10,6 +10,7 @@ import {
   useCommunityVoice,
 } from "../api/community";
 import type { VoiceModel } from "../types";
+import { resolveMediaUrl } from "../utils/media";
 
 type CommunityVoice = VoiceModel & {
   username: string;
@@ -96,7 +97,7 @@ export function useCommunityLogic() {
     const response = await playCommunityVoice(voiceId);
     syncVoiceStats(voiceId, response.data.stats);
 
-    const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}${audioUrl}`);
+    const audio = new Audio(resolveMediaUrl(audioUrl));
     currentAudio = audio;
     playingId.value = voiceId;
     audio.onended = () => {

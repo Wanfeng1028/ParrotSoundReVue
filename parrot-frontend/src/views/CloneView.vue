@@ -164,7 +164,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.clone-container { display: flex; min-height: calc(100vh - 60px); background-color: #f0f2f5; padding: 20px; gap: 20px; }
+.clone-container { display: flex; min-height: var(--page-shell-min-height); background-color: #f0f2f5; padding: 20px; gap: 20px; box-sizing: border-box; }
 .left-panel { flex: 1; display: flex; flex-direction: column; }
 .right-panel { width: 340px; background: #fff; border-radius: 16px; padding: 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
 .content-card { background: #fff; border-radius: 16px; padding: 30px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }

@@ -67,7 +67,8 @@ const goHome = () => {
 
 .page {
   padding-top: var(--header-height);
-  min-height: 100vh;
+  min-height: var(--page-shell-min-height);
+  box-sizing: border-box;
 }
 
 .page-fallback {

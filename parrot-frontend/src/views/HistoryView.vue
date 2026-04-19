@@ -12,7 +12,7 @@
 </template>
 
 <style scoped>
-.history-hub { min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #f5f7ff, #eef1fb); }
+.history-hub { min-height: var(--page-shell-min-height); display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #f5f7ff, #eef1fb); box-sizing: border-box; }
 .hub-card { background: #fff; border-radius: 24px; padding: 48px; box-shadow: 0 18px 60px rgba(62, 77, 124, 0.12); text-align: center; }
 .hub-card h1 { margin: 0 0 12px; color: #36407a; }
 .hub-card p { margin: 0 0 24px; color: #5f678e; }

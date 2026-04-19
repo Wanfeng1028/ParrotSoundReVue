@@ -84,6 +84,7 @@ const createJob = (job) =>
       title: job.title,
       text: job.text,
       voiceId: job.voiceId || null,
+      voiceName: job.voiceName || "",
       status: job.status || "completed",
       audioUrl: job.audioUrl || "/api/media/demo-audio",
       createdAt: nowIso(),

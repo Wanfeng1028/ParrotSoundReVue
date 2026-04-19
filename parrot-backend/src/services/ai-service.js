@@ -58,6 +58,20 @@ const ensureAiConfigured = () => {
   }
 };
 
+const buildLocalDraft = ({ prompt, kind }) => {
+  const normalizedPrompt = String(prompt || "").replace(/\s+/g, " ").trim() || "本次主题";
+
+  if (kind === "teaching") {
+    return `同学们大家好，今天我们围绕“${normalizedPrompt}”展开学习。\n首先，我们会用一个清晰的生活化场景引入主题，帮助大家快速建立整体印象。\n接着，我们按“概念理解、关键步骤、实际应用”三个部分逐步拆解重点内容。\n最后，我会带大家完成一次简短总结，方便课后复习和再次回看。`;
+  }
+
+  if (kind === "voice") {
+    return `这是一款适合“${normalizedPrompt}”场景的中文音色，整体听感清晰自然，节奏稳定，适合演示、讲解和旁白内容。`;
+  }
+
+  return `大家好，欢迎收听今天的内容。接下来，我们将围绕“${normalizedPrompt}”展开讲解。\n这段文稿会保持自然、清晰、便于朗读的节奏，适合直接进入智能配音流程。\n你可以根据页面上的音色、情感和语速设置，快速调整成更符合业务场景的表达风格。\n如果需要导出音频，也可以在试听确认后直接完成。`;
+};
+
 const chat = async ({ prompt, system, model }) => {
   ensureAiConfigured();
   const response = await fetch(`${env.ai.baseUrl}/chat/completions`, {
@@ -93,6 +107,10 @@ const buildDraft = async ({ prompt, kind, model }) => {
     teaching: "You generate structured teaching narration in Chinese. Return only the final script.",
     voice: "You create short voice model descriptions in Chinese. Return only the final description.",
   };
+
+  if (!env.ai.apiKey) {
+    return buildLocalDraft({ prompt, kind });
+  }
 
   return chat({ prompt, system: systemMap[kind], model });
 };

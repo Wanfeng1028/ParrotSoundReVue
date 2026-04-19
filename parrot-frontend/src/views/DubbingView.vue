@@ -17,6 +17,9 @@
         <el-button type="primary" class="ai-btn ps-btn ps-btn--primary ps-btn--sm" :loading="generating" @click="handleAIGenerate">
           创作文章
         </el-button>
+        <el-button plain class="example-btn ps-btn ps-btn--secondary ps-btn--sm" @click="handleFillExample">
+          填入示例
+        </el-button>
       </div>
 
       <div class="editor-card">
@@ -53,6 +56,9 @@
         </div>
 
         <div class="textarea-container">
+          <div class="textarea-tip">
+            先填入示例文案或输入自己的稿件，再选择右侧音色进行试听和导出。
+          </div>
           <el-input
             v-model="textContent"
             type="textarea"
@@ -100,8 +106,12 @@
             <div class="v-name">{{ voice.name }}</div>
             <div class="v-tag">{{ voice.tag }}</div>
           </div>
-          <div class="v-desc">试听可直接写入音频记录</div>
+          <div class="v-desc">点击卡片即可选中，试听可直接验证真实样音。</div>
+          <button type="button" class="voice-preview-btn ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click.stop="previewVoiceSample(voice)">
+            试听音色
+          </button>
         </div>
+        <el-empty v-if="!voiceList.length" description="没有匹配的音色" />
       </div>
 
       <div class="sidebar-footer">
@@ -171,6 +181,7 @@ const {
   selectVoice,
   selectEmotion,
   handleClearText,
+  handleFillExample,
   handleSmartSegment,
   handleLiaison,
   handleInsertPause,
@@ -178,6 +189,7 @@ const {
   handleNumberNormalize,
   handlePhraseNormalize,
   previewCurrentVoice,
+  previewVoiceSample,
   cycleEmotion,
   handlePlay,
   handleExport,
@@ -199,25 +211,29 @@ onMounted(() => {
 
 <style scoped>
 .dubbing-container {
-  display: flex;
-  height: calc(100vh - 60px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  height: var(--page-shell-min-height);
   background:
     radial-gradient(circle at top left, rgba(117, 190, 255, 0.18), transparent 24%),
     radial-gradient(circle at top right, rgba(191, 219, 254, 0.2), transparent 22%),
     linear-gradient(180deg, #eef6ff 0%, #e7f0ff 100%);
-  padding: 15px;
+  padding: 16px;
   gap: 15px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .left-section {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .ai-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px 120px 108px;
   gap: 10px;
 }
 
@@ -228,7 +244,7 @@ onMounted(() => {
 }
 
 .model-select {
-  width: 340px;
+  width: 100%;
 }
 
 .ai-btn {
@@ -244,6 +260,7 @@ onMounted(() => {
   box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
   overflow: hidden;
   backdrop-filter: blur(10px);
+  min-height: 0;
 }
 
 .toolbar {
@@ -252,12 +269,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .tools-list {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .tool-btn {
@@ -308,16 +327,27 @@ onMounted(() => {
   flex: 1;
   position: relative;
   background: rgba(255, 255, 255, 0.82);
+  min-height: 0;
+}
+
+.textarea-tip {
+  padding: 14px 20px 0;
+  font-size: 13px;
+  color: #6f7b90;
 }
 
 :deep(.main-textarea .el-textarea__inner) {
-  height: 100%;
+  min-height: 100%;
   border: none;
   resize: none;
   box-shadow: none;
-  padding: 20px;
+  padding: 12px 20px 20px;
   font-size: 16px;
   line-height: 1.8;
+}
+
+.main-textarea {
+  height: calc(100% - 34px);
 }
 
 .watermark {
@@ -365,13 +395,13 @@ onMounted(() => {
 }
 
 .right-sidebar {
-  width: 320px;
   background: rgba(255, 255, 255, 0.88);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
   backdrop-filter: blur(10px);
+  min-height: 0;
 }
 
 .sidebar-header {
@@ -383,30 +413,33 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 15px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   background: rgba(239, 246, 255, 0.55);
 }
 
 .voice-item {
   background: #fff;
-  border-radius: 8px;
-  padding: 15px 10px;
-  display: flex;
-  flex-direction: column;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
   align-items: center;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 1px solid rgba(181, 207, 245, 0.72);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.06);
 }
 
 .voice-item.active {
   border-color: #5362bc;
+  background: linear-gradient(135deg, rgba(240, 246, 255, 0.98), rgba(255, 255, 255, 0.98));
 }
 
 .voice-info {
-  margin-top: 5px;
+  min-width: 0;
 }
 
 .v-name {
@@ -415,19 +448,25 @@ onMounted(() => {
 }
 
 .v-tag {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 6px;
   background: #333;
   color: #fff;
   font-size: 10px;
-  padding: 1px 4px;
-  border-radius: 2px;
-  margin-top: 2px;
+  padding: 3px 6px;
+  border-radius: 999px;
 }
 
 .v-desc {
-  font-size: 10px;
+  grid-column: 2 / 4;
+  font-size: 12px;
   color: #999;
-  margin-top: 5px;
   line-height: 1.4;
+}
+
+.voice-preview-btn {
+  min-width: 92px;
 }
 
 .sidebar-footer {
@@ -479,6 +518,10 @@ onMounted(() => {
   gap: 6px;
 }
 
+.example-btn {
+  min-width: 108px;
+}
+
 .emo-tag {
   border: 1px solid #eee;
   border-radius: 4px;
@@ -492,5 +535,22 @@ onMounted(() => {
 .emo-tag.active {
   border-color: #5362bc;
   color: #5362bc;
+}
+
+@media (max-width: 1180px) {
+  .dubbing-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: var(--page-shell-min-height);
+    overflow: visible;
+  }
+
+  .ai-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .right-sidebar {
+    min-height: 420px;
+  }
 }
 </style>

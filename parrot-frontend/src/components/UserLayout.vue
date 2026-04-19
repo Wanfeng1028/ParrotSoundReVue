@@ -43,11 +43,12 @@ const activePath = computed(() => route.path)
 <style scoped>
 .user-layout {
   display: flex;
-  min-height: calc(100vh - 60px); /* 减去头部高度 */
+  min-height: var(--page-shell-min-height);
   background: var(--app-bg); /* 全局灰底 */
   padding: 20px 0;
   justify-content: center;
   gap: 20px;
+  box-sizing: border-box;
 }
 
 .user-sidebar {

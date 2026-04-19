@@ -19,7 +19,7 @@
         <div class="card-footer">
           <div class="meta-row">
             <span class="meta-text">创建时间: {{ formatDate(item.createdAt) }}</span>
-            <span class="meta-text align-right">音色 ID: {{ item.voiceId || "-" }}</span>
+            <span class="meta-text align-right">音色: {{ item.voiceName || item.voiceId || "-" }}</span>
           </div>
           <div class="action-row">
             <button class="btn btn-play ps-btn-native ps-btn-native--secondary ps-btn-native--sm" @click="playRecord(item)">播放</button>
@@ -46,7 +46,7 @@
     <div class="bottom-player" v-if="currentRecord">
       <div class="player-left">
         <div class="p-title">{{ currentRecord.title }}</div>
-        <div class="p-voice">音色: {{ currentRecord.voiceId || "默认" }}</div>
+        <div class="p-voice">音色: {{ currentRecord.voiceName || currentRecord.voiceId || "默认" }}</div>
       </div>
       <div class="player-center">
         <div class="play-circle-btn" @click="togglePlayer">
@@ -71,6 +71,7 @@ import { ElMessage } from "element-plus";
 import { Search, VideoPlay } from "@element-plus/icons-vue";
 import { deleteAudioRecord, fetchAudioRecords } from "../api/dubbing";
 import type { DubbingJob } from "../types";
+import { downloadMediaUrl, resolveMediaUrl } from "../utils/media";
 
 const searchText = ref("");
 const playProgress = ref(0);
@@ -83,7 +84,6 @@ const page = ref(1);
 const pageSize = ref(8);
 const total = ref(0);
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 let audioPlayer: HTMLAudioElement | null = null;
 let searchTimer: number | null = null;
 
@@ -103,7 +103,7 @@ const playRecord = (item: DubbingJob) => {
   if (audioPlayer) {
     audioPlayer.pause();
   }
-  audioPlayer = new Audio(`${baseUrl}${item.audioUrl}`);
+  audioPlayer = new Audio(resolveMediaUrl(item.audioUrl));
   audioPlayer.ontimeupdate = () => {
     if (!audioPlayer) return;
     const duration = audioPlayer.duration || 0;
@@ -148,7 +148,7 @@ const seekRecord = (value: number | number[]) => {
 };
 
 const downloadRecord = (item: DubbingJob) => {
-  window.open(`${baseUrl}${item.audioUrl}`, "_blank");
+  downloadMediaUrl(item.audioUrl, `${item.title || "音频记录"}.mp3`);
 };
 
 const removeRecord = async (id: number) => {
@@ -205,7 +205,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.record-page-container { min-height: calc(100vh - 60px); background-color: #f5f7fa; padding: 20px 40px 100px 40px; position: relative; }
+.record-page-container { min-height: var(--page-shell-min-height); background-color: #f5f7fa; padding: 20px 40px 100px 40px; position: relative; box-sizing: border-box; }
 .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .title-text { font-size: 24px; font-weight: bold; color: #333; }
 .header-decoration { width: 40px; height: 4px; background: #5362bc; margin-top: 8px; border-radius: 2px; }

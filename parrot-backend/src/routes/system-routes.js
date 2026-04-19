@@ -28,4 +28,14 @@ router.get("/media/demo-audio", (req, res) => {
   res.sendFile(filePath);
 });
 
+router.get("/media/voice-chaowen", (req, res) => {
+  const filePath = path.resolve(process.cwd(), "../parrot-frontend/src/assets/audio/voice-chaowen.mp3");
+  res.sendFile(filePath);
+});
+
+router.get("/media/voice-xiaoya", (req, res) => {
+  const filePath = path.resolve(process.cwd(), "../parrot-frontend/src/assets/audio/voice-xiaoya.mp3");
+  res.sendFile(filePath);
+});
+
 module.exports = router;
