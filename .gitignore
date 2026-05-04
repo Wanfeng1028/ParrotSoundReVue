@@ -9,6 +9,8 @@ coverage/
 tmp/
 runlogs/
 uploads/
+__pycache__/
+*.py[cod]
 parrot-frontend/node_modules/
 parrot-frontend/dist/
 parrot-backend/node_modules/
