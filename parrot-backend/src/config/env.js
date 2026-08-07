@@ -27,6 +27,10 @@ const env = {
   requestLogSlowMs: Number(process.env.REQUEST_LOG_SLOW_MS || 500),
   cacheTtlSeconds: Number(process.env.CACHE_TTL_SECONDS || 60),
   queueConcurrency: Number(process.env.QUEUE_CONCURRENCY || 2),
+  admin: {
+    username: process.env.ADMIN_USERNAME || "admin",
+    password: process.env.ADMIN_PASSWORD || "Parrot123",
+  },
   smtp: {
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),

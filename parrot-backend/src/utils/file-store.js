@@ -10,6 +10,21 @@ const ensureDir = (dirPath) => {
 
 const dataFile = path.join(env.dataDir, "db.json");
 
+const normalizeState = (state) => {
+  if (!state || typeof state !== "object") return state;
+  state.meta = state.meta || { nextIds: {} };
+  state.meta.nextIds = state.meta.nextIds || {};
+  state.meta.nextIds.admin = Number(state.meta.nextIds.admin) || 1;
+  if (!Array.isArray(state.admins)) state.admins = [];
+  if (Array.isArray(state.users)) {
+    state.users.forEach((user) => {
+      if (user.status === undefined) user.status = "active";
+      if (user.role === undefined) user.role = "user";
+    });
+  }
+  return state;
+};
+
 const seedState = () => {
   const createdAt = new Date().toISOString();
   return {
@@ -22,8 +37,10 @@ const seedState = () => {
         feedback: 1,
         notification: 4,
         teachingProject: 2,
+        admin: 1,
       },
     },
+    admins: [],
     users: [
       {
         id: 1,
@@ -35,6 +52,8 @@ const seedState = () => {
         age: "26",
         gender: "女",
         avatarUrl: "",
+        status: "active",
+        role: "user",
         securityAnswers: { q1: "1998-05-20", q2: "Lin", q3: "Parrot School" },
         createdAt,
       },
@@ -48,6 +67,8 @@ const seedState = () => {
         age: "29",
         gender: "男",
         avatarUrl: "",
+        status: "active",
+        role: "user",
         securityAnswers: { q1: "", q2: "", q3: "" },
         createdAt,
       },
@@ -61,6 +82,8 @@ const seedState = () => {
         age: "31",
         gender: "女",
         avatarUrl: "",
+        status: "active",
+        role: "user",
         securityAnswers: { q1: "", q2: "", q3: "" },
         createdAt,
       },
@@ -215,7 +238,7 @@ const loadState = () => {
     cachedState = writeState(seedState());
     return cachedState;
   }
-  cachedState = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
+  cachedState = normalizeState(JSON.parse(fs.readFileSync(dataFile, "utf-8")));
   return cachedState;
 };
 

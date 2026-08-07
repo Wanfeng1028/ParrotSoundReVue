@@ -14,6 +14,7 @@ const communityRoutes = require("./routes/community-routes");
 const helpRoutes = require("./routes/help-routes");
 const teachingRoutes = require("./routes/teaching-routes");
 const taskRoutes = require("./routes/task-routes");
+const adminRoutes = require("./routes/admin-routes");
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use("/api/community", communityRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/teaching", teachingRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(errorHandler);
 
