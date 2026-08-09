@@ -14,8 +14,8 @@ import (
 
 // Client OpenAI 兼容 API 客户端
 type Client struct {
-	baseURL     string
-	apiKey      string
+	baseURL      string
+	apiKey       string
 	defaultModel string
 	httpClient   *http.Client
 }

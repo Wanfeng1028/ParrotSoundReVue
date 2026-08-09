@@ -10,14 +10,14 @@ import (
 
 // Config 全局配置，通过环境变量加载，启动时校验必填项
 type Config struct {
-	Port             string   `envconfig:"PORT" default:"3000"`
-	FrontendOrigin   string   `envconfig:"FRONTEND_ORIGIN" default:"http://localhost:5173"`
-	JWTSecret        string   `envconfig:"JWT_SECRET" required:"true"`
-	UploadDir        string   `envconfig:"UPLOAD_DIR" default:"./uploads"`
-	RequestLogSlowMs int      `envconfig:"REQUEST_LOG_SLOW_MS" default:"500"`
-	CacheTTLSeconds  int      `envconfig:"CACHE_TTL_SECONDS" default:"300"`
-	QueueConcurrency int      `envconfig:"QUEUE_CONCURRENCY" default:"10"`
-	RedisURL         string   `envconfig:"REDIS_URL" required:"true"`
+	Port             string `envconfig:"PORT" default:"3000"`
+	FrontendOrigin   string `envconfig:"FRONTEND_ORIGIN" default:"http://localhost:5173"`
+	JWTSecret        string `envconfig:"JWT_SECRET" required:"true"`
+	UploadDir        string `envconfig:"UPLOAD_DIR" default:"./uploads"`
+	RequestLogSlowMs int    `envconfig:"REQUEST_LOG_SLOW_MS" default:"500"`
+	CacheTTLSeconds  int    `envconfig:"CACHE_TTL_SECONDS" default:"300"`
+	QueueConcurrency int    `envconfig:"QUEUE_CONCURRENCY" default:"10"`
+	RedisURL         string `envconfig:"REDIS_URL" required:"true"`
 
 	// PostgreSQL
 	PGHost     string `envconfig:"PG_HOST" required:"true"`
@@ -36,7 +36,7 @@ type Config struct {
 	// 阶段 2 新增
 	EtcdAddr string `envconfig:"ETCD_ADDR"`
 	// 阶段 3 新增
-	JaegerEndpoint string `envconfig:"JAEGER_ENDPOINT"`
+	JaegerEndpoint string `envconfig:"JAEGER_ENDPOINT" default:"localhost:4318"`
 }
 
 // PGDSN 返回 PostgreSQL 连接串

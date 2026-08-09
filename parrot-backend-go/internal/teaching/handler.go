@@ -12,7 +12,7 @@ import (
 	"parrot-backend-go/internal/task"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -28,7 +28,7 @@ func NewHandler(db *gorm.DB, queue *task.Queue, cfg *config.Config) *Handler {
 }
 
 // ListProjects GET /api/teaching/projects
-func (h *Handler) ListProjects(c *gin.Context) {
+func (h *Handler) ListProjects(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
@@ -46,34 +46,34 @@ func (h *Handler) ListProjects(c *gin.Context) {
 		Offset((page - 1) * pageSize).Limit(pageSize).Find(&projects)
 
 	models := h.listModels()
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"items":  projects,
 		"models": models,
 	})
 }
 
 // SaveProject POST /api/teaching/projects
-func (h *Handler) SaveProject(c *gin.Context) {
+func (h *Handler) SaveProject(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	var req struct {
-		ID              uint   `json:"id"`
-		Title           string `json:"title"`
-		Script          string `json:"script"`
-		Ratio           string `json:"ratio"`
-		Resolution      string `json:"resolution"`
-		Bitrate         string `json:"bitrate"`
-		SubtitleEnabled *bool  `json:"subtitleEnabled"`
-		VoiceID         *uint  `json:"voiceId"`
-		VoiceName       string `json:"voiceName"`
-		SpeakerID       string `json:"speakerId"`
-		SpeakerName     string `json:"speakerName"`
-		BackgroundID    string `json:"backgroundId"`
-		BackgroundName  string `json:"backgroundName"`
-		Status          string `json:"status"`
-		Mode            string `json:"mode"`
+		ID              uint          `json:"id"`
+		Title           string        `json:"title"`
+		Script          string        `json:"script"`
+		Ratio           string        `json:"ratio"`
+		Resolution      string        `json:"resolution"`
+		Bitrate         string        `json:"bitrate"`
+		SubtitleEnabled *bool         `json:"subtitleEnabled"`
+		VoiceID         *uint         `json:"voiceId"`
+		VoiceName       string        `json:"voiceName"`
+		SpeakerID       string        `json:"speakerId"`
+		SpeakerName     string        `json:"speakerName"`
+		BackgroundID    string        `json:"backgroundId"`
+		BackgroundName  string        `json:"backgroundName"`
+		Status          string        `json:"status"`
+		Mode            string        `json:"mode"`
 		Slides          []interface{} `json:"slides"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -128,13 +128,13 @@ func (h *Handler) SaveProject(c *gin.Context) {
 }
 
 // AIScript POST /api/teaching/ai-script（入队任务）
-func (h *Handler) AIScript(c *gin.Context) {
+func (h *Handler) AIScript(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	var req struct {
 		Prompt string `json:"prompt"`
 		Model  string `json:"model"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -151,7 +151,7 @@ func (h *Handler) AIScript(c *gin.Context) {
 		Model:  req.Model,
 	}
 
-	taskID, err := h.enqueueTask(c.Request.Context(), task.TypeDubbingDraft, userID, payload)
+	taskID, err := h.enqueueTask(ctx, task.TypeDubbingDraft, userID, payload)
 	if err != nil {
 		response.Fail400(c, err.Error())
 		return
@@ -160,13 +160,13 @@ func (h *Handler) AIScript(c *gin.Context) {
 }
 
 // Generate POST /api/teaching/generate（入队任务）
-func (h *Handler) Generate(c *gin.Context) {
+func (h *Handler) Generate(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	var req struct {
 		Title  string `json:"title"`
 		Script string `json:"script"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -184,7 +184,7 @@ func (h *Handler) Generate(c *gin.Context) {
 		Title:  title,
 	}
 
-	taskID, err := h.enqueueTask(c.Request.Context(), task.TypeDubbingExport, userID, payload)
+	taskID, err := h.enqueueTask(ctx, task.TypeDubbingExport, userID, payload)
 	if err != nil {
 		response.Fail400(c, err.Error())
 		return

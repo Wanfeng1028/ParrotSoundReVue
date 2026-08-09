@@ -13,6 +13,7 @@ import (
 	"parrot-backend-go/internal/dubbing_svc"
 	"parrot-backend-go/internal/event"
 	"parrot-backend-go/internal/model"
+	"parrot-backend-go/internal/otel"
 	"parrot-backend-go/internal/task"
 	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
 	"parrot-backend-go/kitex_gen/voice/voiceservice"
@@ -20,6 +21,7 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	registryetcd "github.com/kitex-contrib/registry-etcd"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -31,6 +33,13 @@ import (
 // 网关通过 Kitex RPC 调用本服务，前端接口零改动
 func main() {
 	cfg := config.Load()
+
+	// 阶段 3.2：初始化 OpenTelemetry TracerProvider（OTLP HTTP → Jaeger）
+	tp, err := otel.InitTracer("parrot-dubbing", cfg.JaegerEndpoint)
+	if err != nil {
+		log.Printf("[otel] TracerProvider 初始化失败（链路追踪不可用）: %v", err)
+	}
+	defer otel.Shutdown(tp)
 
 	// 1. 初始化基础设施
 	db := initDB(cfg)
@@ -81,6 +90,7 @@ func main() {
 		impl,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP("0.0.0.0"), Port: parsePort(port)}),
 		server.WithRegistry(r),
+		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
 			ServiceName: "parrot.dubbing",
 		}),

@@ -244,5 +244,3 @@ func voiceToDubbing(v *voice.Voice) *dubbing.Voice {
 		SampleAudioUrl: v.SampleAudioUrl,
 	}
 }
-
-

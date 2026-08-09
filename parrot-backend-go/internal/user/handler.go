@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 
@@ -8,8 +9,9 @@ import (
 	"parrot-backend-go/kitex_gen/user"
 	"parrot-backend-go/kitex_gen/user/userservice"
 	"parrot-backend-go/pkg/response"
+	"parrot-backend-go/pkg/util"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +27,7 @@ func NewHandler(db *gorm.DB, client userservice.Client) *Handler {
 }
 
 // UpdateProfile PUT /api/user/profile（含头像上传）
-func (h *Handler) UpdateProfile(c *gin.Context) {
+func (h *Handler) UpdateProfile(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 
 	req := &user.UpdateProfileReq{
@@ -46,13 +48,13 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	// 头像上传
 	if file, err := c.FormFile("avatar"); err == nil {
 		filename := "avatar_" + strconv.Itoa(int(userID)) + "_" + file.Filename
-		if err := c.SaveUploadedFile(file, "uploads/"+filename); err == nil {
+		if err := util.SaveUploadedFile(file, "uploads/"+filename); err == nil {
 			avatarURL := "/uploads/" + filename
 			req.AvatarUrl = &avatarURL
 		}
 	}
 
-	u, err := h.client.UpdateProfile(c.Request.Context(), req)
+	u, err := h.client.UpdateProfile(ctx, req)
 	if err != nil {
 		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
@@ -62,7 +64,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 }
 
 // UpdatePassword PUT /api/user/password
-func (h *Handler) UpdatePassword(c *gin.Context) {
+func (h *Handler) UpdatePassword(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	var req struct {
 		Q1              string `json:"q1"`
@@ -71,7 +73,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 		Password        string `json:"password"`
 		ConfirmPassword string `json:"confirmPassword"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -100,7 +102,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 		rpcReq.Q3 = &req.Q3
 	}
 
-	_, err := h.client.UpdatePassword(c.Request.Context(), rpcReq)
+	_, err := h.client.UpdatePassword(ctx, rpcReq)
 	if err != nil {
 		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
@@ -111,7 +113,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 
 // GetHistory GET /api/user/history
 // jobs/voices 表位于网关，仍直接查询本地 DB
-func (h *Handler) GetHistory(c *gin.Context) {
+func (h *Handler) GetHistory(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	historyType := c.DefaultQuery("type", "all")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -151,9 +153,9 @@ func (h *Handler) GetHistory(c *gin.Context) {
 		}
 		if historyType == "all" || historyType == t {
 			items = append(items, historyItem{
-				ID: j.Type + "-" + strconv.Itoa(int(j.ID)),
+				ID:     j.Type + "-" + strconv.Itoa(int(j.ID)),
 				ItemID: j.ID, Type: t, Title: j.Title,
-				Date: j.CreatedAt.Format("2006-01-02T15:04:05Z"),
+				Date:   j.CreatedAt.Format("2006-01-02T15:04:05Z"),
 				Status: j.Status, AudioURL: j.AudioURL,
 			})
 		}
@@ -161,9 +163,9 @@ func (h *Handler) GetHistory(c *gin.Context) {
 	for _, v := range voices {
 		if historyType == "all" || historyType == "voice" {
 			items = append(items, historyItem{
-				ID: "voice-" + strconv.Itoa(int(v.ID)),
+				ID:     "voice-" + strconv.Itoa(int(v.ID)),
 				ItemID: v.ID, Type: "voice", Title: v.Name,
-				Date: v.CreatedAt.Format("2006-01-02T15:04:05Z"),
+				Date:  v.CreatedAt.Format("2006-01-02T15:04:05Z"),
 				Cover: v.CoverURL, Status: v.Visibility, AudioURL: v.SampleAudioURL,
 			})
 		}
@@ -184,7 +186,7 @@ func (h *Handler) GetHistory(c *gin.Context) {
 }
 
 // GetInteractions GET /api/user/interactions
-func (h *Handler) GetInteractions(c *gin.Context) {
+func (h *Handler) GetInteractions(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	tab := c.DefaultQuery("type", "all")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -196,7 +198,7 @@ func (h *Handler) GetInteractions(c *gin.Context) {
 		pageSize = 12
 	}
 
-	resp, err := h.client.GetInteractions(c.Request.Context(), &user.GetListReq{
+	resp, err := h.client.GetInteractions(ctx, &user.GetListReq{
 		UserId:   int64(userID),
 		Type:     tab,
 		Page:     int32(page),
@@ -213,19 +215,19 @@ func (h *Handler) GetInteractions(c *gin.Context) {
 		return
 	}
 
-	items := make([]gin.H, len(interactions))
+	items := make([]map[string]interface{}, len(interactions))
 	for i, item := range interactions {
 		actorName := "匿名用户"
 		actorAvatar := ""
 		if item.ActorID > 0 {
-			actor, err := h.client.GetUserByID(c.Request.Context(), int64(item.ActorID))
+			actor, err := h.client.GetUserByID(ctx, int64(item.ActorID))
 			if err == nil && actor != nil {
 				actorName = actor.Username
 				actorAvatar = actor.AvatarUrl
 			}
 		}
 
-		items[i] = gin.H{
+		items[i] = map[string]interface{}{
 			"id":          item.ID,
 			"type":        item.Type,
 			"actorName":   actorName,
@@ -240,7 +242,7 @@ func (h *Handler) GetInteractions(c *gin.Context) {
 }
 
 // GetNotifications GET /api/user/notifications
-func (h *Handler) GetNotifications(c *gin.Context) {
+func (h *Handler) GetNotifications(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	tab := c.DefaultQuery("type", "all")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -252,7 +254,7 @@ func (h *Handler) GetNotifications(c *gin.Context) {
 		pageSize = 12
 	}
 
-	resp, err := h.client.GetNotifications(c.Request.Context(), &user.GetListReq{
+	resp, err := h.client.GetNotifications(ctx, &user.GetListReq{
 		UserId:   int64(userID),
 		Type:     tab,
 		Page:     int32(page),
@@ -273,11 +275,11 @@ func (h *Handler) GetNotifications(c *gin.Context) {
 }
 
 // ReadNotification POST /api/user/notifications/:id/read
-func (h *Handler) ReadNotification(c *gin.Context) {
+func (h *Handler) ReadNotification(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	notifID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 
-	_, err := h.client.ReadNotification(c.Request.Context(), int64(userID), int64(notifID))
+	_, err := h.client.ReadNotification(ctx, int64(userID), int64(notifID))
 	if err != nil {
 		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return

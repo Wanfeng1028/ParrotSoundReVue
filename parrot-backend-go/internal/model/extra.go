@@ -34,8 +34,8 @@ func (TeachingProject) TableName() string { return "teaching_projects" }
 // Interaction 互动记录（点赞/收藏/使用）
 type Interaction struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	UserID    uint      `gorm:"not null;index" json:"userId"`    // 音色所有者
-	ActorID   uint      `gorm:"not null;index" json:"actorId"`   // 操作者
+	UserID    uint      `gorm:"not null;index" json:"userId"`  // 音色所有者
+	ActorID   uint      `gorm:"not null;index" json:"actorId"` // 操作者
 	VoiceID   uint      `gorm:"not null;index" json:"voiceId"`
 	Type      string    `gorm:"size:20;not null" json:"type"` // like/favorite/use
 	CreatedAt time.Time `json:"createdAt"`

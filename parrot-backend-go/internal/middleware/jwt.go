@@ -1,13 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"strings"
 	"time"
 
 	"parrot-backend-go/internal/model"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -34,9 +35,9 @@ func CreateToken(user *model.User, secret string) (string, error) {
 
 // JWTAuth JWT 认证中间件（无状态，阶段 2.3 起不再查 DB）
 // users 表归 user-service，中间件只验证签名 + 解析 claims
-func JWTAuth(secret string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
+func JWTAuth(secret string) app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
+		header := string(c.GetHeader("Authorization"))
 		token := strings.TrimPrefix(header, "Bearer ")
 		if token == "" || token == header {
 			response.Fail401(c, "请先登录")
@@ -56,6 +57,6 @@ func JWTAuth(secret string) gin.HandlerFunc {
 
 		c.Set("userID", claims.UserID)
 		c.Set("email", claims.Email)
-		c.Next()
+		c.Next(ctx)
 	}
 }

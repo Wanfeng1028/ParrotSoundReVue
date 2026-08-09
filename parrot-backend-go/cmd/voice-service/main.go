@@ -9,11 +9,13 @@ import (
 
 	"parrot-backend-go/internal/ai"
 	"parrot-backend-go/internal/config"
+	"parrot-backend-go/internal/otel"
 	"parrot-backend-go/internal/voice_svc"
 	"parrot-backend-go/kitex_gen/voice/voiceservice"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	registryetcd "github.com/kitex-contrib/registry-etcd"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -24,6 +26,13 @@ import (
 // 阶段 2.3：声音克隆服务，独占 voices 表
 func main() {
 	cfg := config.Load()
+
+	// 阶段 3.2：初始化 OpenTelemetry TracerProvider（OTLP HTTP → Jaeger）
+	tp, err := otel.InitTracer("parrot-voice", cfg.JaegerEndpoint)
+	if err != nil {
+		log.Printf("[otel] TracerProvider 初始化失败（链路追踪不可用）: %v", err)
+	}
+	defer otel.Shutdown(tp)
 
 	db := initDB(cfg)
 	aiClient := ai.New(cfg.AIBaseURL, cfg.AIAPIKey, cfg.AIDefaultModel)
@@ -48,6 +57,7 @@ func main() {
 		impl,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP("0.0.0.0"), Port: parsePort(port)}),
 		server.WithRegistry(r),
+		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
 			ServiceName: "parrot.voice",
 		}),

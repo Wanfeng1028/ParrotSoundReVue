@@ -1,6 +1,7 @@
 package dubbing
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
 // Handler 网关侧配音 HTTP 处理器
@@ -24,9 +25,9 @@ func NewHandler(client dubbingservice.Client) *Handler {
 }
 
 // GetOptions GET /api/dubbing/options
-func (h *Handler) GetOptions(c *gin.Context) {
+func (h *Handler) GetOptions(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
-	resp, err := h.client.GetOptions(c.Request.Context(), &dubbing.GetOptionsReq{
+	resp, err := h.client.GetOptions(ctx, &dubbing.GetOptionsReq{
 		UserID: int64(userID),
 	})
 	if err != nil {
@@ -37,12 +38,12 @@ func (h *Handler) GetOptions(c *gin.Context) {
 }
 
 // AIGenerate POST /api/dubbing/ai-generate
-func (h *Handler) AIGenerate(c *gin.Context) {
+func (h *Handler) AIGenerate(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Prompt string `json:"prompt"`
 		Model  string `json:"model"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -54,7 +55,7 @@ func (h *Handler) AIGenerate(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	resp, err := h.client.GenerateDraft(c.Request.Context(), &dubbing.GenerateDraftReq{
+	resp, err := h.client.GenerateDraft(ctx, &dubbing.GenerateDraftReq{
 		UserID: int64(userID),
 		Prompt: prompt,
 		Model:  req.Model,
@@ -67,14 +68,14 @@ func (h *Handler) AIGenerate(c *gin.Context) {
 }
 
 // Preview POST /api/dubbing/preview
-func (h *Handler) Preview(c *gin.Context) {
+func (h *Handler) Preview(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Text     string          `json:"text"`
 		VoiceID  uint            `json:"voiceId"`
 		Title    string          `json:"title"`
 		Settings json.RawMessage `json:"settings"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -86,7 +87,7 @@ func (h *Handler) Preview(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	resp, err := h.client.CreatePreview(c.Request.Context(), &dubbing.PreviewReq{
+	resp, err := h.client.CreatePreview(ctx, &dubbing.PreviewReq{
 		UserID:   int64(userID),
 		Text:     text,
 		VoiceID:  int64(req.VoiceID),
@@ -106,14 +107,14 @@ func (h *Handler) Preview(c *gin.Context) {
 }
 
 // Export POST /api/dubbing/export
-func (h *Handler) Export(c *gin.Context) {
+func (h *Handler) Export(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Text     string          `json:"text"`
 		VoiceID  uint            `json:"voiceId"`
 		Title    string          `json:"title"`
 		Settings json.RawMessage `json:"settings"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -125,7 +126,7 @@ func (h *Handler) Export(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	resp, err := h.client.CreateExport(c.Request.Context(), &dubbing.ExportReq{
+	resp, err := h.client.CreateExport(ctx, &dubbing.ExportReq{
 		UserID:   int64(userID),
 		Text:     text,
 		VoiceID:  int64(req.VoiceID),
@@ -145,7 +146,7 @@ func (h *Handler) Export(c *gin.Context) {
 }
 
 // GetRecords GET /api/dubbing/records
-func (h *Handler) GetRecords(c *gin.Context) {
+func (h *Handler) GetRecords(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
 
@@ -158,7 +159,7 @@ func (h *Handler) GetRecords(c *gin.Context) {
 		pageSize = 12
 	}
 
-	resp, err := h.client.GetRecords(c.Request.Context(), &dubbing.GetRecordsReq{
+	resp, err := h.client.GetRecords(ctx, &dubbing.GetRecordsReq{
 		UserID:   int64(userID),
 		Search:   search,
 		Page:     int32(page),
@@ -173,7 +174,7 @@ func (h *Handler) GetRecords(c *gin.Context) {
 }
 
 // DeleteRecord DELETE /api/dubbing/records/:id
-func (h *Handler) DeleteRecord(c *gin.Context) {
+func (h *Handler) DeleteRecord(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	jobID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -181,7 +182,7 @@ func (h *Handler) DeleteRecord(c *gin.Context) {
 		return
 	}
 
-	ok, err := h.client.DeleteRecord(c.Request.Context(), &dubbing.DeleteRecordReq{
+	ok, err := h.client.DeleteRecord(ctx, &dubbing.DeleteRecordReq{
 		UserID: int64(userID),
 		JobID:  int64(jobID),
 	})

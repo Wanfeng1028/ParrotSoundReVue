@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -19,9 +20,11 @@ import (
 	"parrot-backend-go/internal/voice"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/app/middlewares/server/recovery"
+	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/hertz-contrib/cors"
+	"github.com/hertz-contrib/gzip"
 	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 )
@@ -42,19 +45,19 @@ type Dependencies struct {
 	System    *system.Handler
 }
 
-func Setup(deps *Dependencies) *gin.Engine {
-	r := gin.New()
-	r.Use(gin.Recovery())
-	r.Use(gzip.Gzip(gzip.DefaultCompression))
-	r.Use(cors.New(cors.Config{
+// Setup 构建 Hertz 路由（阶段 3.1：Gin → Hertz）
+func Setup(deps *Dependencies, h *server.Hertz) {
+	h.Use(recovery.Recovery())
+	h.Use(gzip.Gzip(gzip.DefaultCompression))
+	h.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{deps.Cfg.FrontendOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
-	r.Use(requestLogger(deps.Cfg.RequestLogSlowMs))
-	r.Static("/uploads", deps.Cfg.UploadDir)
+	h.Use(requestLogger(deps.Cfg.RequestLogSlowMs))
+	h.Static("/uploads", deps.Cfg.UploadDir)
 
 	// 限流器
 	authLimiter := middleware.NewRateLimiter(rate.Every(15*time.Second), 20)
@@ -66,11 +69,11 @@ func Setup(deps *Dependencies) *gin.Engine {
 
 	jwtAuth := middleware.JWTAuth(deps.Cfg.JWTSecret)
 
-	api := r.Group("/api")
+	api := h.Group("/api")
 	{
 		// ===== 公开接口 =====
-		api.GET("/health", func(c *gin.Context) {
-			response.OK(c, gin.H{"status": "ok", "timestamp": time.Now().Unix()})
+		api.GET("/health", func(ctx context.Context, c *app.RequestContext) {
+			response.OK(c, map[string]interface{}{"status": "ok", "timestamp": time.Now().Unix()})
 		})
 
 		// 系统（与 Node 版对齐：挂在 /api 下，不带 /system 前缀）
@@ -210,17 +213,17 @@ func Setup(deps *Dependencies) *gin.Engine {
 			adminGroup.POST("/notifications/broadcast", deps.Admin.Broadcast)
 		}
 	}
-
-	return r
 }
 
-func requestLogger(slowMs int) gin.HandlerFunc {
-	return func(c *gin.Context) {
+// requestLogger 慢请求日志中间件
+func requestLogger(slowMs int) app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
 		start := time.Now()
-		c.Next()
+		c.Next(ctx)
 		latency := time.Since(start)
 		if latency > time.Duration(slowMs)*time.Millisecond {
-			log.Printf("[WARN][SLOW] %s %s %d %v", c.Request.Method, c.Request.URL.Path, c.Writer.Status(), latency)
+			log.Printf("[WARN][SLOW] %s %s %d %v",
+				c.Method(), c.URI().Path(), c.Response.StatusCode(), latency)
 		}
 	}
 }

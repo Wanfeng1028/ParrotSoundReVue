@@ -1,13 +1,14 @@
 package auth
 
 import (
+	"context"
 	"strings"
 
 	"parrot-backend-go/kitex_gen/user"
 	"parrot-backend-go/kitex_gen/user/userservice"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
 // Handler 认证接口处理器
@@ -21,11 +22,11 @@ func NewHandler(client userservice.Client) *Handler {
 }
 
 // SendCode POST /api/auth/send-code
-func (h *Handler) SendCode(c *gin.Context) {
+func (h *Handler) SendCode(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Email string `json:"email"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -36,13 +37,13 @@ func (h *Handler) SendCode(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.client.SendCode(c.Request.Context(), email)
+	resp, err := h.client.SendCode(ctx, email)
 	if err != nil {
 		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
 	}
 
-	data := gin.H{
+	data := map[string]interface{}{
 		"email":     resp.Email,
 		"expiresAt": resp.ExpiresAt,
 		"delivery":  "development",
@@ -59,14 +60,14 @@ func (h *Handler) SendCode(c *gin.Context) {
 }
 
 // Register POST /api/auth/register
-func (h *Handler) Register(c *gin.Context) {
+func (h *Handler) Register(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Email    string `json:"email"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 		Code     string `json:"code"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -78,7 +79,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.client.Register(c.Request.Context(), &user.RegisterReq{
+	resp, err := h.client.Register(ctx, &user.RegisterReq{
 		Email:    email,
 		Username: username,
 		Password: req.Password,
@@ -98,9 +99,9 @@ func (h *Handler) Register(c *gin.Context) {
 	}
 
 	u := resp.GetUser()
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"token": resp.Token,
-		"user": gin.H{
+		"user": map[string]interface{}{
 			"id":        u.Id,
 			"email":     u.Email,
 			"username":  u.Username,
@@ -110,18 +111,18 @@ func (h *Handler) Register(c *gin.Context) {
 }
 
 // Login POST /api/auth/login
-func (h *Handler) Login(c *gin.Context) {
+func (h *Handler) Login(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
 
 	email := strings.TrimSpace(strings.ToLower(req.Email))
-	resp, err := h.client.Login(c.Request.Context(), &user.LoginReq{
+	resp, err := h.client.Login(ctx, &user.LoginReq{
 		Email:    email,
 		Password: req.Password,
 	})
@@ -139,9 +140,9 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	u := resp.GetUser()
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"token": resp.Token,
-		"user": gin.H{
+		"user": map[string]interface{}{
 			"id":        u.Id,
 			"email":     u.Email,
 			"username":  u.Username,
@@ -154,26 +155,26 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 // SocialLogin POST /api/auth/social-login
-func (h *Handler) SocialLogin(c *gin.Context) {
+func (h *Handler) SocialLogin(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Provider string `json:"provider"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
 
 	provider := strings.TrimSpace(strings.ToLower(req.Provider))
-	resp, err := h.client.SocialLogin(c.Request.Context(), provider)
+	resp, err := h.client.SocialLogin(ctx, provider)
 	if err != nil {
 		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
 	}
 
 	u := resp.GetUser()
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"token": resp.Token,
-		"user": gin.H{
+		"user": map[string]interface{}{
 			"id":        u.Id,
 			"email":     u.Email,
 			"username":  u.Username,
@@ -186,19 +187,19 @@ func (h *Handler) SocialLogin(c *gin.Context) {
 }
 
 // ResetPassword POST /api/auth/reset-password
-func (h *Handler) ResetPassword(c *gin.Context) {
+func (h *Handler) ResetPassword(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 		Code     string `json:"code"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
 
 	email := strings.TrimSpace(strings.ToLower(req.Email))
-	_, err := h.client.ResetPassword(c.Request.Context(), &user.ResetPasswordReq{
+	_, err := h.client.ResetPassword(ctx, &user.ResetPasswordReq{
 		Email:    email,
 		Password: req.Password,
 		Code:     req.Code,
@@ -220,10 +221,10 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 }
 
 // Me GET /api/auth/me（需要 JWT 认证）
-func (h *Handler) Me(c *gin.Context) {
+func (h *Handler) Me(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 
-	u, err := h.client.GetUserByID(c.Request.Context(), int64(userID))
+	u, err := h.client.GetUserByID(ctx, int64(userID))
 	if err != nil {
 		msg := err.Error()
 		if strings.Contains(msg, "用户不存在") {
@@ -234,7 +235,7 @@ func (h *Handler) Me(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"id":        u.Id,
 		"email":     u.Email,
 		"username":  u.Username,

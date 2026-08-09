@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"parrot-backend-go/kitex_gen/voice/voiceservice"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -39,12 +40,12 @@ type AdminClaims struct {
 }
 
 // Login POST /api/admin/login（公开）
-func (h *Handler) Login(c *gin.Context) {
+func (h *Handler) Login(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -77,16 +78,16 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"token": token,
 		"admin": safeAdmin(&admin),
 	}, "管理员登录成功")
 }
 
 // Auth 中间件：验证 admin JWT
-func (h *Handler) Auth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
+func (h *Handler) Auth() app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
+		header := string(c.GetHeader("Authorization"))
 		token := strings.TrimPrefix(header, "Bearer ")
 		if token == "" || token == header {
 			response.Fail401(c, "请先登录管理后台")
@@ -113,18 +114,18 @@ func (h *Handler) Auth() gin.HandlerFunc {
 
 		c.Set("admin", &admin)
 		c.Set("adminID", admin.ID)
-		c.Next()
+		c.Next(ctx)
 	}
 }
 
 // Profile GET /api/admin/profile
-func (h *Handler) Profile(c *gin.Context) {
+func (h *Handler) Profile(ctx context.Context, c *app.RequestContext) {
 	admin := c.MustGet("admin").(*model.Admin)
 	response.OK(c, safeAdmin(admin))
 }
 
 // UpdateProfile PUT /api/admin/profile
-func (h *Handler) UpdateProfile(c *gin.Context) {
+func (h *Handler) UpdateProfile(ctx context.Context, c *app.RequestContext) {
 	admin := c.MustGet("admin").(*model.Admin)
 	var req struct {
 		Phone     string `json:"phone"`
@@ -132,7 +133,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		Gender    string `json:"gender"`
 		AvatarURL string `json:"avatarUrl"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -151,13 +152,13 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 }
 
 // UpdatePassword PUT /api/admin/password
-func (h *Handler) UpdatePassword(c *gin.Context) {
+func (h *Handler) UpdatePassword(ctx context.Context, c *app.RequestContext) {
 	admin := c.MustGet("admin").(*model.Admin)
 	var req struct {
 		OldPassword string `json:"oldPassword"`
 		NewPassword string `json:"newPassword"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -183,9 +184,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 }
 
 // Stats GET /api/admin/stats
-func (h *Handler) Stats(c *gin.Context) {
-	ctx := c.Request.Context()
-
+func (h *Handler) Stats(ctx context.Context, c *app.RequestContext) {
 	userCount, _ := h.userClient.CountAll(ctx)
 	voiceCount, _ := h.voiceClient.CountAll(ctx)
 	publicVoices, _ := h.voiceClient.CountByVisibility(ctx, "public")
@@ -195,8 +194,8 @@ func (h *Handler) Stats(c *gin.Context) {
 	h.db.Model(&model.Job{}).Count(&jobCount)
 	h.db.Model(&model.Feedback{}).Count(&feedbackCount)
 
-	response.OK(c, gin.H{
-		"overview": gin.H{
+	response.OK(c, map[string]interface{}{
+		"overview": map[string]interface{}{
 			"users":         userCount,
 			"voices":        voiceCount,
 			"jobs":          jobCount,
@@ -208,21 +207,19 @@ func (h *Handler) Stats(c *gin.Context) {
 }
 
 // System GET /api/admin/system
-func (h *Handler) System(c *gin.Context) {
-	ctx := c.Request.Context()
-
+func (h *Handler) System(ctx context.Context, c *app.RequestContext) {
 	userCount, _ := h.userClient.CountAll(ctx)
 	voiceCount, _ := h.voiceClient.CountAll(ctx)
 
 	var jobCount int64
 	h.db.Model(&model.Job{}).Count(&jobCount)
 
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"cacheMode":        "redis",
 		"mysqlMode":        "postgresql",
 		"aiConfigured":     h.cfg.AIAPIKey != "",
 		"queueConcurrency": h.cfg.QueueConcurrency,
-		"overview": gin.H{
+		"overview": map[string]interface{}{
 			"users":  userCount,
 			"voices": voiceCount,
 			"jobs":   jobCount,
@@ -232,8 +229,7 @@ func (h *Handler) System(c *gin.Context) {
 }
 
 // ListUsers GET /api/admin/users
-func (h *Handler) ListUsers(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) ListUsers(ctx context.Context, c *app.RequestContext) {
 	search := c.Query("search")
 	status := c.Query("status")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -266,8 +262,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 }
 
 // GetUser GET /api/admin/users/:id
-func (h *Handler) GetUser(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) GetUser(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 
 	u, err := h.userClient.AdminGetUser(ctx, int64(id))
@@ -279,8 +274,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 }
 
 // UpdateUser PUT /api/admin/users/:id
-func (h *Handler) UpdateUser(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) UpdateUser(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req struct {
 		Username  *string `json:"username"`
@@ -291,7 +285,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		Status    *string `json:"status"`
 		Role      *string `json:"role"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -314,16 +308,14 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 }
 
 // DeleteUser DELETE /api/admin/users/:id
-func (h *Handler) DeleteUser(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) DeleteUser(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	h.userClient.AdminDeleteUser(ctx, int64(id))
 	response.OK(c, nil, "用户及其关联数据已删除")
 }
 
 // ListVoices GET /api/admin/voices
-func (h *Handler) ListVoices(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) ListVoices(ctx context.Context, c *app.RequestContext) {
 	visibility := c.Query("visibility")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
@@ -348,15 +340,14 @@ func (h *Handler) ListVoices(c *gin.Context) {
 }
 
 // UpdateVoice PUT /api/admin/voices/:id
-func (h *Handler) UpdateVoice(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) UpdateVoice(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req struct {
 		Visibility *string `json:"visibility"`
 		Name       *string `json:"name"`
 		Tag        *string `json:"tag"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -375,15 +366,14 @@ func (h *Handler) UpdateVoice(c *gin.Context) {
 }
 
 // DeleteVoice DELETE /api/admin/voices/:id
-func (h *Handler) DeleteVoice(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) DeleteVoice(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	h.voiceClient.AdminDelete(ctx, int64(id))
 	response.OK(c, nil, "声音已删除")
 }
 
 // ListJobs GET /api/admin/jobs
-func (h *Handler) ListJobs(c *gin.Context) {
+func (h *Handler) ListJobs(ctx context.Context, c *app.RequestContext) {
 	jobType := c.Query("type")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
@@ -409,14 +399,14 @@ func (h *Handler) ListJobs(c *gin.Context) {
 }
 
 // DeleteJob DELETE /api/admin/jobs/:id
-func (h *Handler) DeleteJob(c *gin.Context) {
+func (h *Handler) DeleteJob(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	h.db.Delete(&model.Job{}, id)
 	response.OK(c, nil, "任务已删除")
 }
 
 // ListFeedbacks GET /api/admin/feedbacks
-func (h *Handler) ListFeedbacks(c *gin.Context) {
+func (h *Handler) ListFeedbacks(ctx context.Context, c *app.RequestContext) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
 	if page < 1 {
@@ -436,14 +426,14 @@ func (h *Handler) ListFeedbacks(c *gin.Context) {
 }
 
 // DeleteFeedback DELETE /api/admin/feedbacks/:id
-func (h *Handler) DeleteFeedback(c *gin.Context) {
+func (h *Handler) DeleteFeedback(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	h.db.Delete(&model.Feedback{}, id)
 	response.OK(c, nil, "反馈已删除")
 }
 
 // ListTeaching GET /api/admin/teaching
-func (h *Handler) ListTeaching(c *gin.Context) {
+func (h *Handler) ListTeaching(ctx context.Context, c *app.RequestContext) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
 	if page < 1 {
@@ -463,21 +453,20 @@ func (h *Handler) ListTeaching(c *gin.Context) {
 }
 
 // DeleteTeaching DELETE /api/admin/teaching/:id
-func (h *Handler) DeleteTeaching(c *gin.Context) {
+func (h *Handler) DeleteTeaching(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	h.db.Delete(&model.TeachingProject{}, id)
 	response.OK(c, nil, "教学项目已删除")
 }
 
 // Broadcast POST /api/admin/notifications/broadcast
-func (h *Handler) Broadcast(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) Broadcast(ctx context.Context, c *app.RequestContext) {
 	var req struct {
 		Title string `json:"title"`
 		Desc  string `json:"desc"`
 		Type  string `json:"type"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -504,7 +493,7 @@ func (h *Handler) Broadcast(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{"recipients": count}, "公告已推送给 "+strconv.Itoa(int(count))+" 位用户")
+	response.OK(c, map[string]interface{}{"recipients": count}, "公告已推送给 "+strconv.Itoa(int(count))+" 位用户")
 }
 
 func (h *Handler) createAdminToken(admin *model.Admin) (string, error) {
@@ -520,8 +509,8 @@ func (h *Handler) createAdminToken(admin *model.Admin) (string, error) {
 	return token.SignedString([]byte(h.cfg.JWTSecret))
 }
 
-func safeAdmin(admin *model.Admin) gin.H {
-	return gin.H{
+func safeAdmin(admin *model.Admin) map[string]interface{} {
+	return map[string]interface{}{
 		"id":              admin.ID,
 		"username":        admin.Username,
 		"phone":           admin.Phone,

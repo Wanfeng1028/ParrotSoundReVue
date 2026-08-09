@@ -477,16 +477,16 @@ func codeKey(email string) string {
 func modelToThrift(u *model.User) *user.User {
 	secAnswers, _ := json.Marshal(u.SecurityAnswers)
 	return &user.User{
-		Id:               int64(u.ID),
-		Email:            u.Email,
-		Username:         u.Username,
-		Phone:            u.Phone,
-		Age:              u.Age,
-		Gender:           u.Gender,
-		AvatarUrl:        u.AvatarURL,
-		SecurityAnswers:  secAnswers,
-		Role:             u.Role,
-		Status:           u.Status,
-		CreatedAt:        u.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		Id:              int64(u.ID),
+		Email:           u.Email,
+		Username:        u.Username,
+		Phone:           u.Phone,
+		Age:             u.Age,
+		Gender:          u.Gender,
+		AvatarUrl:       u.AvatarURL,
+		SecurityAnswers: secAnswers,
+		Role:            u.Role,
+		Status:          u.Status,
+		CreatedAt:       u.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }

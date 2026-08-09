@@ -1,13 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 	"golang.org/x/time/rate"
 )
 
@@ -66,9 +67,9 @@ func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 	return entry.limiter
 }
 
-// Middleware 返回 Gin 中间件，key 按 scope + userID/IP 生成
-func (rl *RateLimiter) Middleware(scope string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+// Middleware 返回 Hertz 中间件，key 按 scope + userID/IP 生成
+func (rl *RateLimiter) Middleware(scope string) app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
 		key := fmt.Sprintf("%s:%s", scope, c.ClientIP())
 		if uid, ok := c.Get("userID"); ok {
 			key = fmt.Sprintf("%s:user:%v", scope, uid)
@@ -78,6 +79,6 @@ func (rl *RateLimiter) Middleware(scope string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Next()
+		c.Next(ctx)
 	}
 }

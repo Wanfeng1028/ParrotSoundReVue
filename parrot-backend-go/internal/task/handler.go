@@ -1,9 +1,11 @@
 package task
 
 import (
+	"context"
+
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
 // TaskHandler 任务状态查询处理器
@@ -16,7 +18,7 @@ func NewTaskHandler(queue *Queue) *TaskHandler {
 }
 
 // GetTask GET /api/tasks/:taskId
-func (h *TaskHandler) GetTask(c *gin.Context) {
+func (h *TaskHandler) GetTask(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	taskID := c.Param("taskId")
 
@@ -26,7 +28,7 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{
+	response.OK(c, map[string]interface{}{
 		"taskId":    task.ID,
 		"status":    task.Status,
 		"progress":  task.Progress,

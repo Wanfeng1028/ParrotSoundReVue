@@ -11,11 +11,13 @@ import (
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/event"
 	"parrot-backend-go/internal/model"
+	"parrot-backend-go/internal/otel"
 	"parrot-backend-go/internal/user_svc"
 	"parrot-backend-go/kitex_gen/user/userservice"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	registryetcd "github.com/kitex-contrib/registry-etcd"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -27,6 +29,13 @@ import (
 // 阶段 2.4：消费 events 队列，幂等写入 notifications 表（跨服务事件通信的消费端）
 func main() {
 	cfg := config.Load()
+
+	// 阶段 3.2：初始化 OpenTelemetry TracerProvider（OTLP HTTP → Jaeger）
+	tp, err := otel.InitTracer("parrot-user", cfg.JaegerEndpoint)
+	if err != nil {
+		log.Printf("[otel] TracerProvider 初始化失败（链路追踪不可用）: %v", err)
+	}
+	defer otel.Shutdown(tp)
 
 	db := initDB(cfg)
 	redisCache := cache.New(cfg.RedisURL)
@@ -56,6 +65,7 @@ func main() {
 		impl,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP("0.0.0.0"), Port: parsePort(port)}),
 		server.WithRegistry(r),
+		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
 			ServiceName: "parrot.user",
 		}),

@@ -1,6 +1,7 @@
 package community
 
 import (
+	"context"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 	"parrot-backend-go/kitex_gen/voice/voiceservice"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
 type Handler struct {
@@ -24,8 +25,7 @@ func NewHandler(vc voiceservice.Client, uc userservice.Client) *Handler {
 }
 
 // ListVoices GET /api/community/voices（公开）
-func (h *Handler) ListVoices(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) ListVoices(ctx context.Context, c *app.RequestContext) {
 	search := c.Query("search")
 	sortParam := c.DefaultQuery("sort", "recommend")
 	language := c.DefaultQuery("language", "all")
@@ -89,9 +89,9 @@ func (h *Handler) ListVoices(c *gin.Context) {
 	paged := filtered[start:end]
 
 	// 批量获取作者信息
-	userMap := h.userMap(c, collectUserIDs(paged))
+	userMap := h.userMap(ctx, c, collectUserIDs(paged))
 
-	items := make([]gin.H, len(paged))
+	items := make([]map[string]interface{}, len(paged))
 	for i, v := range paged {
 		username := "未知用户"
 		userAvatar := ""
@@ -99,7 +99,7 @@ func (h *Handler) ListVoices(c *gin.Context) {
 			username = u.Username
 			userAvatar = u.AvatarUrl
 		}
-		items[i] = gin.H{
+		items[i] = map[string]interface{}{
 			"id":             v.Id,
 			"name":           v.Name,
 			"username":       username,
@@ -109,7 +109,7 @@ func (h *Handler) ListVoices(c *gin.Context) {
 			"desc":           v.Description,
 			"avatar":         v.CoverUrl,
 			"sampleAudioUrl": v.SampleAudioUrl,
-			"stats": gin.H{
+			"stats": map[string]interface{}{
 				"play":     v.PlayCount,
 				"like":     v.LikeCount,
 				"favorite": v.FavoriteCount,
@@ -122,8 +122,7 @@ func (h *Handler) ListVoices(c *gin.Context) {
 }
 
 // Rankings GET /api/community/rankings（公开）
-func (h *Handler) Rankings(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *Handler) Rankings(ctx context.Context, c *app.RequestContext) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "5"))
 	if page < 1 {
@@ -142,9 +141,9 @@ func (h *Handler) Rankings(c *gin.Context) {
 	voices := resp.GetItems()
 	total := resp.GetTotal()
 
-	userMap := h.userMap(c, collectUserIDs(voices))
+	userMap := h.userMap(ctx, c, collectUserIDs(voices))
 
-	items := make([]gin.H, len(voices))
+	items := make([]map[string]interface{}, len(voices))
 	for i, v := range voices {
 		username := "未知用户"
 		userAvatar := ""
@@ -152,7 +151,7 @@ func (h *Handler) Rankings(c *gin.Context) {
 			username = u.Username
 			userAvatar = u.AvatarUrl
 		}
-		items[i] = gin.H{
+		items[i] = map[string]interface{}{
 			"id":         v.Id,
 			"name":       v.Name,
 			"username":   username,
@@ -166,27 +165,26 @@ func (h *Handler) Rankings(c *gin.Context) {
 }
 
 // Like POST /api/community/voices/:id/like
-func (h *Handler) Like(c *gin.Context) {
-	h.mutateStat(c, "like_count", "like", "点赞成功")
+func (h *Handler) Like(ctx context.Context, c *app.RequestContext) {
+	h.mutateStat(ctx, c, "like_count", "like", "点赞成功")
 }
 
 // Play POST /api/community/voices/:id/play
-func (h *Handler) Play(c *gin.Context) {
-	h.mutateStat(c, "play_count", "play", "试听次数已更新")
+func (h *Handler) Play(ctx context.Context, c *app.RequestContext) {
+	h.mutateStat(ctx, c, "play_count", "play", "试听次数已更新")
 }
 
 // Favorite POST /api/community/voices/:id/favorite
-func (h *Handler) Favorite(c *gin.Context) {
-	h.mutateStat(c, "favorite_count", "favorite", "收藏成功")
+func (h *Handler) Favorite(ctx context.Context, c *app.RequestContext) {
+	h.mutateStat(ctx, c, "favorite_count", "favorite", "收藏成功")
 }
 
 // Use POST /api/community/voices/:id/use
-func (h *Handler) Use(c *gin.Context) {
-	h.mutateStat(c, "use_count", "use", "已加入创作流程")
+func (h *Handler) Use(ctx context.Context, c *app.RequestContext) {
+	h.mutateStat(ctx, c, "use_count", "use", "已加入创作流程")
 }
 
-func (h *Handler) mutateStat(c *gin.Context, field, interactionType, msg string) {
-	ctx := c.Request.Context()
+func (h *Handler) mutateStat(ctx context.Context, c *app.RequestContext, field, interactionType, msg string) {
 	userID := c.MustGet("userID").(uint)
 	voiceID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 
@@ -233,12 +231,12 @@ func collectUserIDs(voices []*voice.Voice) []int64 {
 }
 
 // userMap 批量获取用户信息并构建 id -> User 映射
-func (h *Handler) userMap(c *gin.Context, ids []int64) map[int64]*user.User {
+func (h *Handler) userMap(ctx context.Context, c *app.RequestContext, ids []int64) map[int64]*user.User {
 	m := map[int64]*user.User{}
 	if len(ids) == 0 {
 		return m
 	}
-	users, err := h.userClient.GetUsersByIDs(c.Request.Context(), ids)
+	users, err := h.userClient.GetUsersByIDs(ctx, ids)
 	if err != nil {
 		return m
 	}

@@ -1,6 +1,7 @@
 package help
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"parrot-backend-go/kitex_gen/user/userservice"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +25,7 @@ func NewHandler(db *gorm.DB, userClient userservice.Client) *Handler {
 }
 
 // ListTutorials GET /api/help/tutorials（公开）
-func (h *Handler) ListTutorials(c *gin.Context) {
+func (h *Handler) ListTutorials(ctx context.Context, c *app.RequestContext) {
 	category := c.Query("category")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
@@ -47,9 +48,9 @@ func (h *Handler) ListTutorials(c *gin.Context) {
 	query.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&tutorials)
 
 	// 只返回摘要字段
-	items := make([]gin.H, len(tutorials))
+	items := make([]map[string]interface{}, len(tutorials))
 	for i, t := range tutorials {
-		items[i] = gin.H{
+		items[i] = map[string]interface{}{
 			"id":       t.ID,
 			"category": t.Category,
 			"title":    t.Title,
@@ -63,7 +64,7 @@ func (h *Handler) ListTutorials(c *gin.Context) {
 }
 
 // GetTutorial GET /api/help/tutorials/:id（公开）
-func (h *Handler) GetTutorial(c *gin.Context) {
+func (h *Handler) GetTutorial(ctx context.Context, c *app.RequestContext) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var tutorial model.Tutorial
 	if err := h.db.First(&tutorial, id).Error; err != nil {
@@ -74,13 +75,13 @@ func (h *Handler) GetTutorial(c *gin.Context) {
 }
 
 // SubmitFeedback POST /api/help/feedback（需要认证）
-func (h *Handler) SubmitFeedback(c *gin.Context) {
+func (h *Handler) SubmitFeedback(ctx context.Context, c *app.RequestContext) {
 	userID := c.MustGet("userID").(uint)
 	var req struct {
 		UsageTime string `json:"usageTime"`
 		Content   string `json:"content"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.BindAndValidate(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
@@ -107,7 +108,7 @@ func (h *Handler) SubmitFeedback(c *gin.Context) {
 
 	// 发通知（通过 user-service RPC，notifications 表归 user-service 独占）
 	eventID := fmt.Sprintf("feedback-%d", feedback.ID)
-	_, _ = h.userClient.CreateNotification(c.Request.Context(), &user.CreateNotificationReq{
+	_, _ = h.userClient.CreateNotification(ctx, &user.CreateNotificationReq{
 		UserId:  int64(userID),
 		Type:    "system",
 		Title:   "反馈已收到",

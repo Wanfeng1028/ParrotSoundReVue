@@ -1,6 +1,7 @@
 package system
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -8,7 +9,7 @@ import (
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/pkg/response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
 type Handler struct {
@@ -20,20 +21,20 @@ func NewHandler(cfg *config.Config) *Handler {
 }
 
 // Ping GET /api/system/ping（公开）
-func (h *Handler) Ping(c *gin.Context) {
-	response.OK(c, gin.H{
-		"time":          time.Now().Format(time.RFC3339),
-		"cacheMode":     "redis",
-		"mysqlMode":     "postgresql",
-		"aiConfigured":  h.cfg.AIAPIKey != "",
+func (h *Handler) Ping(ctx context.Context, c *app.RequestContext) {
+	response.OK(c, map[string]interface{}{
+		"time":         time.Now().Format(time.RFC3339),
+		"cacheMode":    "redis",
+		"mysqlMode":    "postgresql",
+		"aiConfigured": h.cfg.AIAPIKey != "",
 	}, "服务器运行正常")
 }
 
 // AIModels GET /api/system/ai/models（公开）
-func (h *Handler) AIModels(c *gin.Context) {
-	models := make([]gin.H, len(h.cfg.AIModels))
+func (h *Handler) AIModels(ctx context.Context, c *app.RequestContext) {
+	models := make([]map[string]interface{}, len(h.cfg.AIModels))
 	for i, id := range h.cfg.AIModels {
-		models[i] = gin.H{
+		models[i] = map[string]interface{}{
 			"id":        id,
 			"provider":  "openai",
 			"label":     id,
@@ -44,8 +45,8 @@ func (h *Handler) AIModels(c *gin.Context) {
 }
 
 // DemoAudio GET /api/media/demo-audio（公开）
-func (h *Handler) DemoAudio(c *gin.Context) {
-	h.serveMedia(c, []string{
+func (h *Handler) DemoAudio(ctx context.Context, c *app.RequestContext) {
+	h.serveMedia(ctx, c, []string{
 		"../parrot-frontend/src/assets/audio/example.wav",
 		"uploads/demo-audio.wav",
 		"uploads/example.wav",
@@ -53,23 +54,23 @@ func (h *Handler) DemoAudio(c *gin.Context) {
 }
 
 // VoiceChaoWen GET /api/media/voice-chaowen（公开）
-func (h *Handler) VoiceChaoWen(c *gin.Context) {
-	h.serveMedia(c, []string{
+func (h *Handler) VoiceChaoWen(ctx context.Context, c *app.RequestContext) {
+	h.serveMedia(ctx, c, []string{
 		"../parrot-frontend/src/assets/audio/voice-chaowen.mp3",
 		"uploads/voice-chaowen.mp3",
 	}, "音频文件不存在")
 }
 
 // VoiceXiaoYa GET /api/media/voice-xiaoya（公开）
-func (h *Handler) VoiceXiaoYa(c *gin.Context) {
-	h.serveMedia(c, []string{
+func (h *Handler) VoiceXiaoYa(ctx context.Context, c *app.RequestContext) {
+	h.serveMedia(ctx, c, []string{
 		"../parrot-frontend/src/assets/audio/voice-xiaoya.mp3",
 		"uploads/voice-xiaoya.mp3",
 	}, "音频文件不存在")
 }
 
 // serveMedia 按候选路径查找并返回静态媒体文件
-func (h *Handler) serveMedia(c *gin.Context, candidates []string, notFoundMsg string) {
+func (h *Handler) serveMedia(ctx context.Context, c *app.RequestContext, candidates []string, notFoundMsg string) {
 	for _, path := range candidates {
 		if _, err := os.Stat(path); err == nil {
 			abs, _ := filepath.Abs(path)
