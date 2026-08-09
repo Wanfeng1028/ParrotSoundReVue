@@ -55,7 +55,7 @@ func Fail(c *gin.Context, httpStatus int, code int, msg string) {
 
 // Fail400 请求错误
 func Fail400(c *gin.Context, msg string) {
-	c.JSON(400, Response{Code: -1, Msg: msg, Data: nil})
+	c.JSON(400, Response{Code: 400, Msg: msg, Data: nil})
 }
 
 // Fail404 未找到

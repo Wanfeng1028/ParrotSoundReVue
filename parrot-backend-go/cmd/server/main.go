@@ -6,58 +6,65 @@ import (
 	"os/signal"
 	"syscall"
 
+	"parrot-backend-go/internal/admin"
 	"parrot-backend-go/internal/ai"
 	"parrot-backend-go/internal/auth"
 	"parrot-backend-go/internal/cache"
+	"parrot-backend-go/internal/community"
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/database"
 	"parrot-backend-go/internal/dubbing"
+	"parrot-backend-go/internal/help"
 	"parrot-backend-go/internal/router"
+	"parrot-backend-go/internal/system"
 	"parrot-backend-go/internal/task"
+	"parrot-backend-go/internal/teaching"
+	"parrot-backend-go/internal/user"
+	"parrot-backend-go/internal/voice"
 )
 
 func main() {
-	// 加载配置
 	cfg := config.Load()
 
-	// 初始化 PostgreSQL
+	// 基础设施
 	db := database.InitPostgres(cfg)
-
-	// 初始化 Redis
 	redisCache := cache.New(cfg.RedisURL)
-
-	// 初始化 AI 客户端
 	aiClient := ai.New(cfg.AIBaseURL, cfg.AIAPIKey, cfg.AIDefaultModel)
 
-	// 初始化任务队列
+	// 任务队列 + Worker + Reaper
 	taskQueue := task.NewQueue(db, cfg.RedisURL)
 	defer taskQueue.Close()
-
-	// 初始化任务处理器 + 启动 Worker
 	taskHandlers := task.NewHandlers(taskQueue, aiClient, db)
 	task.StartWorker(cfg.RedisURL, cfg.QueueConcurrency, taskHandlers)
+	reaper := task.NewReaper(db, task.DefaultTimeouts())
+	reaper.Start()
 
-	// 初始化认证域
+	// 业务域 handler
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo, redisCache, cfg.JWTSecret)
 	authHandler := auth.NewHandler(authService)
 
-	// 初始化配音域
 	dubbingRepo := dubbing.NewRepository(db)
 	dubbingService := dubbing.NewService(dubbingRepo, taskQueue, cfg)
 	dubbingHandler := dubbing.NewHandler(dubbingService)
 
-	// 任务状态查询 handler
 	taskHandler := task.NewTaskHandler(taskQueue)
 
-	// 初始化路由
+	voiceHandler := voice.NewHandler(db, redisCache, aiClient)
+	teachingHandler := teaching.NewHandler(db, taskQueue, cfg)
+	communityHandler := community.NewHandler(db)
+	helpHandler := help.NewHandler(db)
+	userHandler := user.NewHandler(db)
+	adminHandler := admin.NewHandler(db, cfg)
+	systemHandler := system.NewHandler(cfg)
+
+	// 路由
 	deps := &router.Dependencies{
-		DB:      db,
-		Cache:   redisCache,
-		Cfg:     cfg,
-		Auth:    authHandler,
-		Dubbing: dubbingHandler,
-		Task:    taskHandler,
+		DB: db, Cache: redisCache, Cfg: cfg,
+		Auth: authHandler, Dubbing: dubbingHandler, Task: taskHandler,
+		Voice: voiceHandler, Teaching: teachingHandler,
+		Community: communityHandler, Help: helpHandler,
+		User: userHandler, Admin: adminHandler, System: systemHandler,
 	}
 	r := router.Setup(deps)
 

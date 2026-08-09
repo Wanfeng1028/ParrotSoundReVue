@@ -6,6 +6,7 @@ import (
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/model"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -31,17 +32,23 @@ func InitPostgres(cfg *config.Config) *gorm.DB {
 		&model.Job{},
 		&model.Voice{},
 		&model.Notification{},
+		&model.TeachingProject{},
+		&model.Interaction{},
+		&model.Feedback{},
+		&model.Tutorial{},
+		&model.Admin{},
 	); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 
 	seedVoices(db)
+	seedAdmin(db)
+	seedTutorials(db)
 
 	log.Println("PostgreSQL 连接成功，表结构已迁移")
 	return db
 }
 
-// seedVoices 插入测试音色数据（仅在 voices 表为空时）
 func seedVoices(db *gorm.DB) {
 	var count int64
 	db.Model(&model.Voice{}).Count(&count)
@@ -57,4 +64,42 @@ func seedVoices(db *gorm.DB) {
 	}
 	db.Create(&voices)
 	log.Printf("已插入 %d 条测试音色数据", len(voices))
+}
+
+func seedAdmin(db *gorm.DB) {
+	var count int64
+	db.Model(&model.Admin{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), 10)
+	admin := &model.Admin{
+		Username:     "admin",
+		PasswordHash: string(hash),
+		Phone:        "",
+		Gender:       "未设置",
+		Status:       "active",
+	}
+	db.Create(admin)
+	log.Println("已创建默认管理员: admin / admin123")
+}
+
+func seedTutorials(db *gorm.DB) {
+	var count int64
+	db.Model(&model.Tutorial{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	tutorials := []model.Tutorial{
+		{Category: "入门", Title: "如何创建你的第一个配音", Duration: "5分钟", Summary: "从零开始，快速上手配音创作流程。"},
+		{Category: "入门", Title: "音色选择指南", Duration: "3分钟", Summary: "了解不同音色的特点，选择最适合你的声音。"},
+		{Category: "进阶", Title: "AI 文案生成技巧", Duration: "8分钟", Summary: "掌握 AI 生成高质量配音文案的提示词技巧。"},
+		{Category: "进阶", Title: "教学课件制作", Duration: "10分钟", Summary: "使用教学模块快速生成专业课件内容。"},
+		{Category: "高级", Title: "声音克隆实战", Duration: "15分钟", Summary: "从音频样本到自定义音色的完整流程。"},
+		{Category: "高级", Title: "社区分享与互动", Duration: "6分钟", Summary: "将你的作品分享到社区，获取更多反馈。"},
+	}
+	db.Create(&tutorials)
+	log.Printf("已插入 %d 条教程数据", len(tutorials))
 }
