@@ -7,7 +7,9 @@ import (
 	"parrot-backend-go/internal/auth"
 	"parrot-backend-go/internal/cache"
 	"parrot-backend-go/internal/config"
+	"parrot-backend-go/internal/dubbing"
 	"parrot-backend-go/internal/middleware"
+	"parrot-backend-go/internal/task"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-contrib/cors"
@@ -19,10 +21,12 @@ import (
 
 // Dependencies 所有业务域的依赖集合
 type Dependencies struct {
-	DB     *gorm.DB
-	Cache  *cache.Cache
-	Auth   *auth.Handler
-	Cfg    *config.Config
+	DB      *gorm.DB
+	Cache   *cache.Cache
+	Cfg     *config.Config
+	Auth    *auth.Handler
+	Dubbing *dubbing.Handler
+	Task    *task.TaskHandler
 }
 
 // Setup 初始化 Gin 引擎并注册路由
@@ -45,10 +49,10 @@ func Setup(deps *Dependencies) *gin.Engine {
 	r.Static("/uploads", deps.Cfg.UploadDir)
 
 	// 限流器
-	// authLimiter: 5分钟20次（与 Node 版一致）
-	// codeLimiter: 5分钟8次
 	authLimiter := middleware.NewRateLimiter(rate.Every(15*time.Second), 20)
 	codeLimiter := middleware.NewRateLimiter(rate.Every(37*time.Second), 8)
+	aiLimiter := middleware.NewRateLimiter(rate.Every(30*time.Second), 5)
+	exportLimiter := middleware.NewRateLimiter(rate.Every(60*time.Second), 3)
 
 	api := r.Group("/api")
 	{
@@ -68,14 +72,34 @@ func Setup(deps *Dependencies) *gin.Engine {
 			authGroup.POST("/login", authLimiter.Middleware("auth"), deps.Auth.Login)
 			authGroup.POST("/social-login", authLimiter.Middleware("auth"), deps.Auth.SocialLogin)
 			authGroup.POST("/reset-password", authLimiter.Middleware("auth"), deps.Auth.ResetPassword)
-			authGroup.GET("/me", middleware.JWTAuth(deps.Cfg.JWTSecret, deps.DB), deps.Auth.Me)
+		}
+
+		// ===== 以下接口需要 JWT 认证 =====
+		authed := api.Group("")
+		authed.Use(middleware.JWTAuth(deps.Cfg.JWTSecret, deps.DB))
+		{
+			// 认证 - 获取当前用户
+			authed.GET("/auth/me", deps.Auth.Me)
+
+			// 配音模块
+			dubbingGroup := authed.Group("/dubbing")
+			{
+				dubbingGroup.GET("/options", deps.Dubbing.GetOptions)
+				dubbingGroup.POST("/ai-generate", aiLimiter.Middleware("ai"), deps.Dubbing.AIGenerate)
+				dubbingGroup.POST("/preview", exportLimiter.Middleware("export"), deps.Dubbing.Preview)
+				dubbingGroup.POST("/export", exportLimiter.Middleware("export"), deps.Dubbing.Export)
+				dubbingGroup.GET("/records", deps.Dubbing.GetRecords)
+				dubbingGroup.DELETE("/records/:id", deps.Dubbing.DeleteRecord)
+			}
+
+			// 任务状态查询
+			authed.GET("/tasks/:taskId", deps.Task.GetTask)
 		}
 	}
 
 	return r
 }
 
-// requestLogger 请求日志中间件，慢请求打 Warn
 func requestLogger(slowMs int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
