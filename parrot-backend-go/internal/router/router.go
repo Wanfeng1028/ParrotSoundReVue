@@ -64,7 +64,7 @@ func Setup(deps *Dependencies) *gin.Engine {
 	interactionLimiter := middleware.NewRateLimiter(rate.Every(10*time.Second), 10)
 	feedbackLimiter := middleware.NewRateLimiter(rate.Every(60*time.Second), 3)
 
-	jwtAuth := middleware.JWTAuth(deps.Cfg.JWTSecret, deps.DB)
+	jwtAuth := middleware.JWTAuth(deps.Cfg.JWTSecret)
 
 	api := r.Group("/api")
 	{

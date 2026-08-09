@@ -4,23 +4,24 @@ import (
 	"strconv"
 	"strings"
 
-	"parrot-backend-go/internal/ai"
-	"parrot-backend-go/internal/cache"
-	"parrot-backend-go/internal/model"
+	"parrot-backend-go/kitex_gen/user"
+	"parrot-backend-go/kitex_gen/user/userservice"
+	"parrot-backend-go/kitex_gen/voice"
+	"parrot-backend-go/kitex_gen/voice/voiceservice"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
+// Handler 网关侧声音 HTTP 处理器
+// 阶段 2.3：通过 Kitex RPC 调用 voice-service 和 user-service
 type Handler struct {
-	db    *gorm.DB
-	cache *cache.Cache
-	ai    *ai.Client
+	voiceClient voiceservice.Client
+	userClient  userservice.Client
 }
 
-func NewHandler(db *gorm.DB, cache *cache.Cache, ai *ai.Client) *Handler {
-	return &Handler{db: db, cache: cache, ai: ai}
+func NewHandler(vc voiceservice.Client, uc userservice.Client) *Handler {
+	return &Handler{voiceClient: vc, userClient: uc}
 }
 
 // Library GET /api/voices/library（公开）
@@ -28,38 +29,50 @@ func (h *Handler) Library(c *gin.Context) {
 	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
 	filter := c.DefaultQuery("filter", "all")
 
-	query := h.db.Model(&model.Voice{}).Where("visibility = ?", "public")
-	if search != "" {
-		like := "%" + search + "%"
-		query = query.Where("name ILIKE ? OR tag ILIKE ?", like, like)
-	}
-	if filter != "all" {
-		query = query.Where("tag = ?", filter)
+	voices, err := h.voiceClient.ListPublic(c.Request.Context(), &voice.ListPublicReq{
+		Search: search,
+		Filter: filter,
+	})
+	if err != nil {
+		response.Fail(c, 500, 500, "声音服务暂时不可用")
+		return
 	}
 
-	var voices []model.Voice
-	query.Order("created_at DESC").Find(&voices)
+	// 批量查作者信息
+	userIDSet := map[int64]bool{}
+	for _, v := range voices {
+		userIDSet[v.UserId] = true
+	}
+	userIDs := make([]int64, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
 
-	// 附加作者信息
+	userMap := map[int64]*user.User{}
+	if len(userIDs) > 0 {
+		users, _ := h.userClient.GetUsersByIDs(c.Request.Context(), userIDs)
+		for _, u := range users {
+			userMap[u.Id] = u
+		}
+	}
+
 	result := make([]gin.H, len(voices))
 	for i, v := range voices {
-		var user model.User
-		h.db.First(&user, v.UserID)
 		authorName := "未知用户"
 		authorAvatar := ""
-		if user.ID > 0 {
-			authorName = user.Username
-			authorAvatar = user.AvatarURL
+		if u, ok := userMap[v.UserId]; ok && u != nil {
+			authorName = u.Username
+			authorAvatar = u.AvatarUrl
 		}
 		result[i] = gin.H{
-			"id":             v.ID,
-			"userId":         v.UserID,
+			"id":             v.Id,
+			"userId":         v.UserId,
 			"name":           v.Name,
 			"description":    v.Description,
 			"tag":            v.Tag,
 			"language":       v.Language,
-			"coverUrl":       v.CoverURL,
-			"sampleAudioUrl": v.SampleAudioURL,
+			"coverUrl":       v.CoverUrl,
+			"sampleAudioUrl": v.SampleAudioUrl,
 			"authorName":     authorName,
 			"authorAvatar":   authorAvatar,
 			"createdAt":      v.CreatedAt,
@@ -71,8 +84,11 @@ func (h *Handler) Library(c *gin.Context) {
 // My GET /api/voices/my
 func (h *Handler) My(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
-	var voices []model.Voice
-	h.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&voices)
+	voices, err := h.voiceClient.ListByUser(c.Request.Context(), int64(userID))
+	if err != nil {
+		response.Fail(c, 500, 500, "声音服务暂时不可用")
+		return
+	}
 	response.OK(c, voices)
 }
 
@@ -85,46 +101,46 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	voice := &model.Voice{
-		UserID:        userID,
-		Name:          name,
-		Description:   c.PostForm("description"),
-		Tag:           c.DefaultPostForm("tag", "未分类"),
-		Visibility:    c.DefaultPostForm("visibility", "private"),
-		Language:      c.DefaultPostForm("language", "cn"),
-		SampleAudioURL: "/api/media/demo-audio",
-	}
-
-	// 文件上传
+	var coverURL, sampleAudioURL string
 	if cover, err := c.FormFile("cover"); err == nil {
 		filename := "voice_cover_" + strconv.Itoa(int(userID)) + "_" + cover.Filename
 		if err := c.SaveUploadedFile(cover, "uploads/"+filename); err == nil {
-			voice.CoverURL = "/uploads/" + filename
+			coverURL = "/uploads/" + filename
 		}
 	}
 	if sample, err := c.FormFile("sample"); err == nil {
 		filename := "voice_sample_" + strconv.Itoa(int(userID)) + "_" + sample.Filename
 		if err := c.SaveUploadedFile(sample, "uploads/"+filename); err == nil {
-			voice.SampleAudioURL = "/uploads/" + filename
+			sampleAudioURL = "/uploads/" + filename
 		}
 	}
 
-	if err := h.db.Create(voice).Error; err != nil {
-		response.Fail400(c, "创建失败")
+	v, err := h.voiceClient.Create(c.Request.Context(), &voice.CreateVoiceReq{
+		UserId:         int64(userID),
+		Name:           name,
+		Description:    c.PostForm("description"),
+		Tag:            c.DefaultPostForm("tag", "未分类"),
+		Visibility:     c.DefaultPostForm("visibility", "private"),
+		Language:       c.DefaultPostForm("language", "cn"),
+		CoverUrl:       coverURL,
+		SampleAudioUrl: sampleAudioURL,
+	})
+	if err != nil {
+		response.Fail400(c, err.Error())
 		return
 	}
 
-	// 发通知
-	notif := &model.Notification{
-		UserID:  userID,
+	// 发通知（通过 user-service RPC）
+	eventID := "voice-create-" + strconv.Itoa(int(v.Id))
+	h.userClient.CreateNotification(c.Request.Context(), &user.CreateNotificationReq{
+		UserId:  int64(userID),
 		Type:    "info",
 		Title:   "声音模型创建成功",
 		Desc:    "模型「" + name + "」已加入你的声音库。",
-		EventID: "voice-create-" + strconv.Itoa(int(voice.ID)),
-	}
-	h.db.Where("event_id = ?", notif.EventID).FirstOrCreate(notif)
+		EventId: eventID,
+	})
 
-	response.OK(c, voice, "声音模型已创建")
+	response.OK(c, v, "声音模型已创建")
 }
 
 // UpdateVisibility PATCH /api/voices/:id/visibility
@@ -140,19 +156,15 @@ func (h *Handler) UpdateVisibility(c *gin.Context) {
 		return
 	}
 
-	visibility := "private"
-	if req.Visibility == "public" {
-		visibility = "public"
-	}
-
-	result := h.db.Model(&model.Voice{}).
-		Where("id = ? AND user_id = ?", voiceID, userID).
-		Update("visibility", visibility)
-	if result.RowsAffected == 0 {
+	ok, err := h.voiceClient.UpdateVisibility(c.Request.Context(), &voice.UpdateVisibilityReq{
+		Id:         int64(voiceID),
+		UserId:     int64(userID),
+		Visibility: req.Visibility,
+	})
+	if err != nil || !ok {
 		response.Fail404(c, "声音模型不存在")
 		return
 	}
-
 	response.OK(c, nil, "可见性已更新")
 }
 
@@ -161,12 +173,14 @@ func (h *Handler) Delete(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 	voiceID, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 
-	result := h.db.Where("id = ? AND user_id = ?", voiceID, userID).Delete(&model.Voice{})
-	if result.RowsAffected == 0 {
+	ok, err := h.voiceClient.Delete(c.Request.Context(), &voice.DeleteVoiceReq{
+		Id:     int64(voiceID),
+		UserId: int64(userID),
+	})
+	if err != nil || !ok {
 		response.Fail404(c, "声音模型不存在")
 		return
 	}
-
 	response.OK(c, nil, "声音模型已删除")
 }
 
@@ -182,12 +196,14 @@ func (h *Handler) DescribeAI(c *gin.Context) {
 		return
 	}
 
-	prompt := "请为以下声音模型生成一句描述和一个简短标签，使用 JSON 格式返回：{\"description\":\"\",\"tag\":\"\"}\n名称：" + req.Name + "\n风格：" + req.Prompt
-	content, err := h.ai.BuildDraft(c.Request.Context(), prompt, "voice", req.Model)
+	content, err := h.voiceClient.DescribeAI(c.Request.Context(), &voice.DescribeReq{
+		Name:   req.Name,
+		Prompt: req.Prompt,
+		Model:  req.Model,
+	})
 	if err != nil {
 		response.Fail400(c, "AI 描述生成失败")
 		return
 	}
-
 	response.OK(c, gin.H{"raw": content}, "AI 描述生成成功")
 }

@@ -48,7 +48,43 @@ services:
       timeout: 3s
       retries: 5
 
-  # 阶段 2：dubbing-service 微服务
+  # 阶段 2.3：user-service 微服务
+  user-service:
+    build:
+      context: .
+      target: user-service
+    container_name: parrot-user
+    env_file: .env
+    environment:
+      ETCD_ADDR: etcd:2379
+      USER_SERVICE_PORT: "8890"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 阶段 2.3：voice-service 微服务
+  voice-service:
+    build:
+      context: .
+      target: voice-service
+    container_name: parrot-voice
+    env_file: .env
+    environment:
+      ETCD_ADDR: etcd:2379
+      VOICE_SERVICE_PORT: "8889"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 阶段 2.2：dubbing-service 微服务
   dubbing-service:
     build:
       context: .
@@ -65,6 +101,8 @@ services:
         condition: service_healthy
       etcd:
         condition: service_healthy
+      voice-service:
+        condition: service_started
     restart: unless-stopped
 
   # 网关（Gin HTTP 服务）
@@ -87,6 +125,10 @@ services:
         condition: service_healthy
       etcd:
         condition: service_healthy
+      user-service:
+        condition: service_started
+      voice-service:
+        condition: service_started
       dubbing-service:
         condition: service_started
     restart: unless-stopped

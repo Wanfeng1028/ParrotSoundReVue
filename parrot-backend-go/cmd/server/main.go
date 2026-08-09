@@ -23,6 +23,8 @@ import (
 	"parrot-backend-go/internal/user"
 	"parrot-backend-go/internal/voice"
 	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
+	"parrot-backend-go/kitex_gen/user/userservice"
+	"parrot-backend-go/kitex_gen/voice/voiceservice"
 
 	"github.com/cloudwego/kitex/client"
 	registryetcd "github.com/kitex-contrib/registry-etcd"
@@ -31,14 +33,12 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// 基础设施
+	// 基础设施（网关仍需 DB 用于 teaching/help/admin/task 等本地模块）
 	db := database.InitPostgres(cfg)
 	redisCache := cache.New(cfg.RedisURL)
 	aiClient := ai.New(cfg.AIBaseURL, cfg.AIAPIKey, cfg.AIDefaultModel)
 
-	// 任务队列 + Worker + Reaper
-	// 阶段 2：网关仍保留 Worker 处理教学模块发起的配音任务（复用 TypeDubbingExport）
-	// dubbing-service 也有自己的 Worker，两者共享同一 Redis 队列，Asynq 自动负载均衡
+	// 任务队列 + Worker + Reaper（教学模块仍需）
 	taskQueue := task.NewQueue(db, cfg.RedisURL)
 	defer taskQueue.Close()
 	taskHandlers := task.NewHandlers(taskQueue, aiClient, db)
@@ -46,23 +46,21 @@ func main() {
 	reaper := task.NewReaper(db, task.DefaultTimeouts())
 	reaper.Start()
 
+	// 阶段 2：Kitex 微服务客户端
+	dubbingClient := newKitexClient("parrot.dubbing", "DUBBING_SERVICE_ADDR", "127.0.0.1:8888", cfg).(dubbingservice.Client)
+	voiceClient := newKitexClient("parrot.voice", "VOICE_SERVICE_ADDR", "127.0.0.1:8889", cfg).(voiceservice.Client)
+	userClient := newKitexClient("parrot.user", "USER_SERVICE_ADDR", "127.0.0.1:8890", cfg).(userservice.Client)
+
 	// 业务域 handler
-	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo, redisCache, cfg.JWTSecret)
-	authHandler := auth.NewHandler(authService)
-
-	// 阶段 2：配音模块通过 Kitex RPC 调用 dubbing-service
-	dubbingClient := newDubbingClient(cfg)
+	authHandler := auth.NewHandler(userClient)
 	dubbingHandler := dubbing.NewHandler(dubbingClient)
-
 	taskHandler := task.NewTaskHandler(taskQueue)
-
-	voiceHandler := voice.NewHandler(db, redisCache, aiClient)
+	voiceHandler := voice.NewHandler(voiceClient, userClient)
 	teachingHandler := teaching.NewHandler(db, taskQueue, cfg)
-	communityHandler := community.NewHandler(db)
+	communityHandler := community.NewHandler(voiceClient, userClient)
 	helpHandler := help.NewHandler(db)
-	userHandler := user.NewHandler(db)
-	adminHandler := admin.NewHandler(db, cfg)
+	userHandler := user.NewHandler(db, userClient)
+	adminHandler := admin.NewHandler(db, cfg, voiceClient, userClient)
 	systemHandler := system.NewHandler(cfg)
 
 	// 路由
@@ -89,35 +87,49 @@ func main() {
 	log.Println("服务关闭中...")
 }
 
-// newDubbingClient 创建 dubbing-service 的 Kitex 客户端
-// 优先使用 etcd 服务发现；未配置 etcd 时回退到直连模式（本地开发用）
-func newDubbingClient(cfg *config.Config) dubbingservice.Client {
+// newKitexClient 通用 Kitex 客户端创建（etcd 发现 / 直连双模式）
+func newKitexClient(serviceName, envKey, defaultAddr string, cfg *config.Config) interface{} {
 	opts := []client.Option{
 		client.WithRPCTimeout(10 * time.Second),
 		client.WithConnectTimeout(3 * time.Second),
 	}
 
 	if cfg.EtcdAddr != "" {
-		// etcd 服务发现模式
 		r, err := registryetcd.NewEtcdResolver([]string{cfg.EtcdAddr})
 		if err != nil {
 			log.Fatalf("etcd resolver 初始化失败: %v", err)
 		}
 		opts = append(opts, client.WithResolver(r))
-		log.Printf("配音服务客户端：etcd 服务发现 (%s)", cfg.EtcdAddr)
+		log.Printf("%s 客户端：etcd 服务发现 (%s)", serviceName, cfg.EtcdAddr)
 	} else {
-		// 直连模式（本地开发，未部署 etcd 时使用）
-		addr := os.Getenv("DUBBING_SERVICE_ADDR")
+		addr := os.Getenv(envKey)
 		if addr == "" {
-			addr = "127.0.0.1:8888"
+			addr = defaultAddr
 		}
 		opts = append(opts, client.WithHostPorts(addr))
-		log.Printf("配音服务客户端：直连模式 (%s)", addr)
+		log.Printf("%s 客户端：直连模式 (%s)", serviceName, addr)
 	}
 
-	cli, err := dubbingservice.NewClient("parrot.dubbing", opts...)
-	if err != nil {
-		log.Fatalf("dubbing-service 客户端创建失败: %v", err)
+	switch serviceName {
+	case "parrot.dubbing":
+		cli, err := dubbingservice.NewClient(serviceName, opts...)
+		if err != nil {
+			log.Fatalf("%s 客户端创建失败: %v", serviceName, err)
+		}
+		return cli
+	case "parrot.voice":
+		cli, err := voiceservice.NewClient(serviceName, opts...)
+		if err != nil {
+			log.Fatalf("%s 客户端创建失败: %v", serviceName, err)
+		}
+		return cli
+	case "parrot.user":
+		cli, err := userservice.NewClient(serviceName, opts...)
+		if err != nil {
+			log.Fatalf("%s 客户端创建失败: %v", serviceName, err)
+		}
+		return cli
 	}
-	return cli
+	log.Fatalf("未知服务: %s", serviceName)
+	return nil
 }

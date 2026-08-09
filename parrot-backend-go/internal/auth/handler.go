@@ -3,18 +3,21 @@ package auth
 import (
 	"strings"
 
+	"parrot-backend-go/kitex_gen/user"
+	"parrot-backend-go/kitex_gen/user/userservice"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Handler 认证接口处理器
+// 通过 Kitex RPC 调用 user-service，不再直接访问本地数据库
 type Handler struct {
-	svc *Service
+	client userservice.Client
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(client userservice.Client) *Handler {
+	return &Handler{client: client}
 }
 
 // SendCode POST /api/auth/send-code
@@ -33,23 +36,23 @@ func (h *Handler) SendCode(c *gin.Context) {
 		return
 	}
 
-	code, expiresAt, devMode, err := h.svc.SendCode(c.Request.Context(), email)
+	resp, err := h.client.SendCode(c.Request.Context(), email)
 	if err != nil {
-		response.Fail400(c, "验证码发送失败")
+		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
 	}
 
 	data := gin.H{
-		"email":     email,
-		"expiresAt": expiresAt,
+		"email":     resp.Email,
+		"expiresAt": resp.ExpiresAt,
 		"delivery":  "development",
 	}
-	if devMode {
-		data["code"] = code
+	if resp.DevMode {
+		data["code"] = resp.GetCode()
 	}
 
 	msg := "验证码已生成，当前为开发模式"
-	if !devMode {
+	if !resp.DevMode {
 		msg = "验证码已发送"
 	}
 	response.OK(c, data, msg)
@@ -75,27 +78,33 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	user, token, err := h.svc.Register(c.Request.Context(), email, username, req.Password, req.Code)
+	resp, err := h.client.Register(c.Request.Context(), &user.RegisterReq{
+		Email:    email,
+		Username: username,
+		Password: req.Password,
+		Code:     req.Code,
+	})
 	if err != nil {
 		msg := err.Error()
-		switch msg {
-		case "该邮箱已注册":
-			response.Fail409(c, msg)
-		case "验证码错误或已失效":
-			response.Fail400(c, msg)
+		switch {
+		case strings.Contains(msg, "该邮箱已注册"):
+			response.Fail409(c, "该邮箱已注册")
+		case strings.Contains(msg, "验证码错误或已失效"):
+			response.Fail400(c, "验证码错误或已失效")
 		default:
-			response.Fail400(c, msg)
+			response.Fail(c, 500, 500, "用户服务暂时不可用")
 		}
 		return
 	}
 
+	u := resp.GetUser()
 	response.OK(c, gin.H{
-		"token": token,
+		"token": resp.Token,
 		"user": gin.H{
-			"id":        user.ID,
-			"email":     user.Email,
-			"username":  user.Username,
-			"avatarUrl": user.AvatarURL,
+			"id":        u.Id,
+			"email":     u.Email,
+			"username":  u.Username,
+			"avatarUrl": u.AvatarUrl,
 		},
 	}, "注册成功")
 }
@@ -112,30 +121,34 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	email := strings.TrimSpace(strings.ToLower(req.Email))
-	user, token, err := h.svc.Login(c.Request.Context(), email, req.Password)
+	resp, err := h.client.Login(c.Request.Context(), &user.LoginReq{
+		Email:    email,
+		Password: req.Password,
+	})
 	if err != nil {
 		msg := err.Error()
-		switch msg {
-		case "用户不存在":
-			response.Fail404(c, msg)
-		case "密码错误":
-			response.Fail400(c, msg)
+		switch {
+		case strings.Contains(msg, "用户不存在"):
+			response.Fail404(c, "用户不存在")
+		case strings.Contains(msg, "密码错误"):
+			response.Fail400(c, "密码错误")
 		default:
-			response.Fail400(c, msg)
+			response.Fail(c, 500, 500, "用户服务暂时不可用")
 		}
 		return
 	}
 
+	u := resp.GetUser()
 	response.OK(c, gin.H{
-		"token": token,
+		"token": resp.Token,
 		"user": gin.H{
-			"id":        user.ID,
-			"email":     user.Email,
-			"username":  user.Username,
-			"phone":     user.Phone,
-			"age":       user.Age,
-			"gender":    user.Gender,
-			"avatarUrl": user.AvatarURL,
+			"id":        u.Id,
+			"email":     u.Email,
+			"username":  u.Username,
+			"phone":     u.Phone,
+			"age":       u.Age,
+			"gender":    u.Gender,
+			"avatarUrl": u.AvatarUrl,
 		},
 	}, "登录成功")
 }
@@ -151,24 +164,25 @@ func (h *Handler) SocialLogin(c *gin.Context) {
 	}
 
 	provider := strings.TrimSpace(strings.ToLower(req.Provider))
-	user, token, err := h.svc.SocialLogin(c.Request.Context(), provider)
+	resp, err := h.client.SocialLogin(c.Request.Context(), provider)
 	if err != nil {
-		response.Fail400(c, err.Error())
+		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
 	}
 
+	u := resp.GetUser()
 	response.OK(c, gin.H{
-		"token": token,
+		"token": resp.Token,
 		"user": gin.H{
-			"id":        user.ID,
-			"email":     user.Email,
-			"username":  user.Username,
-			"phone":     user.Phone,
-			"age":       user.Age,
-			"gender":    user.Gender,
-			"avatarUrl": user.AvatarURL,
+			"id":        u.Id,
+			"email":     u.Email,
+			"username":  u.Username,
+			"phone":     u.Phone,
+			"age":       u.Age,
+			"gender":    u.Gender,
+			"avatarUrl": u.AvatarUrl,
 		},
-	}, user.Username+"登录成功")
+	}, u.Username+"登录成功")
 }
 
 // ResetPassword POST /api/auth/reset-password
@@ -184,16 +198,20 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 	}
 
 	email := strings.TrimSpace(strings.ToLower(req.Email))
-	err := h.svc.ResetPassword(c.Request.Context(), email, req.Password, req.Code)
+	_, err := h.client.ResetPassword(c.Request.Context(), &user.ResetPasswordReq{
+		Email:    email,
+		Password: req.Password,
+		Code:     req.Code,
+	})
 	if err != nil {
 		msg := err.Error()
-		switch msg {
-		case "用户不存在":
-			response.Fail404(c, msg)
-		case "验证码错误或已失效":
-			response.Fail400(c, msg)
+		switch {
+		case strings.Contains(msg, "用户不存在"):
+			response.Fail404(c, "用户不存在")
+		case strings.Contains(msg, "验证码错误或已失效"):
+			response.Fail400(c, "验证码错误或已失效")
 		default:
-			response.Fail400(c, msg)
+			response.Fail(c, 500, 500, "用户服务暂时不可用")
 		}
 		return
 	}
@@ -205,19 +223,24 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 func (h *Handler) Me(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
-	fullUser, err := h.svc.repo.GetByID(userID)
+	u, err := h.client.GetUserByID(c.Request.Context(), int64(userID))
 	if err != nil {
-		response.Fail404(c, "用户不存在")
+		msg := err.Error()
+		if strings.Contains(msg, "用户不存在") {
+			response.Fail404(c, "用户不存在")
+			return
+		}
+		response.Fail(c, 500, 500, "用户服务暂时不可用")
 		return
 	}
 
 	response.OK(c, gin.H{
-		"id":        fullUser.ID,
-		"email":     fullUser.Email,
-		"username":  fullUser.Username,
-		"phone":     fullUser.Phone,
-		"age":       fullUser.Age,
-		"gender":    fullUser.Gender,
-		"avatarUrl": fullUser.AvatarURL,
+		"id":        u.Id,
+		"email":     u.Email,
+		"username":  u.Username,
+		"phone":     u.Phone,
+		"age":       u.Age,
+		"gender":    u.Gender,
+		"avatarUrl": u.AvatarUrl,
 	})
 }

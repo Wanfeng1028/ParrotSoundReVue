@@ -10,41 +10,53 @@ import (
 	"parrot-backend-go/internal/model"
 	"parrot-backend-go/internal/task"
 	"parrot-backend-go/kitex_gen/dubbing"
+	"parrot-backend-go/kitex_gen/voice"
+	"parrot-backend-go/kitex_gen/voice/voiceservice"
 
 	"gorm.io/gorm"
 )
 
 // Impl DubbingService 的 Kitex 服务端实现
 // 阶段 2：将配音业务逻辑从单体网关下沉到独立微服务
+// 阶段 2.3：音色校验改为通过 voice-service RPC，不再直接查 voices 表
 type Impl struct {
-	db    *gorm.DB
-	queue *task.Queue
-	ai    *ai.Client
-	cfg   *config.Config
+	db          *gorm.DB
+	queue       *task.Queue
+	ai          *ai.Client
+	cfg         *config.Config
+	voiceClient voiceservice.Client
 }
 
 // NewImpl 创建 dubbing-service 实现实例
-func NewImpl(db *gorm.DB, queue *task.Queue, aiClient *ai.Client, cfg *config.Config) *Impl {
-	return &Impl{db: db, queue: queue, ai: aiClient, cfg: cfg}
+func NewImpl(db *gorm.DB, queue *task.Queue, aiClient *ai.Client, cfg *config.Config, vc voiceservice.Client) *Impl {
+	return &Impl{db: db, queue: queue, ai: aiClient, cfg: cfg, voiceClient: vc}
 }
 
 // GetOptions 获取配音选项（音色 + 情感 + 模型）
 func (s *Impl) GetOptions(ctx context.Context, req *dubbing.GetOptionsReq) (*dubbing.OptionsResp, error) {
-	var voices []model.Voice
-	err := s.db.Where("visibility = ? OR user_id = ?", "public", req.UserID).
-		Order("created_at DESC").Find(&voices).Error
+	// 通过 voice-service RPC 获取公开音色 + 用户私有音色
+	publicVoices, err := s.voiceClient.ListPublic(ctx, &voice.ListPublicReq{Filter: "all"})
 	if err != nil {
-		return nil, fmt.Errorf("查询音色失败: %w", err)
+		return nil, fmt.Errorf("查询公开音色失败: %w", err)
+	}
+	userVoices, err := s.voiceClient.ListByUser(ctx, req.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("查询用户音色失败: %w", err)
 	}
 
-	voiceList := make([]*dubbing.Voice, len(voices))
-	for i, v := range voices {
-		voiceList[i] = &dubbing.Voice{
-			Id:             int64(v.ID),
-			Name:           v.Name,
-			Tag:            v.Tag,
-			Avatar:         v.CoverURL,
-			SampleAudioUrl: v.SampleAudioURL,
+	// 合并去重
+	seen := map[int64]bool{}
+	voiceList := []*dubbing.Voice{}
+	for _, v := range publicVoices {
+		if !seen[v.Id] {
+			seen[v.Id] = true
+			voiceList = append(voiceList, voiceToDubbing(v))
+		}
+	}
+	for _, v := range userVoices {
+		if !seen[v.Id] {
+			seen[v.Id] = true
+			voiceList = append(voiceList, voiceToDubbing(v))
 		}
 	}
 
@@ -95,10 +107,10 @@ func (s *Impl) GenerateDraft(ctx context.Context, req *dubbing.GenerateDraftReq)
 
 // CreatePreview 试听配音（异步任务）
 func (s *Impl) CreatePreview(ctx context.Context, req *dubbing.PreviewReq) (*dubbing.TaskCreatedResp, error) {
-	// 校验音色
-	var voice model.Voice
-	if err := s.db.Where("id = ? AND (visibility = ? OR user_id = ?)", req.VoiceID, "public", req.UserID).
-		First(&voice).Error; err != nil {
+	// 通过 voice-service RPC 校验音色
+	if _, err := s.voiceClient.ValidateForUser(ctx, &voice.ValidateVoiceReq{
+		Id: req.VoiceID, UserId: req.UserID,
+	}); err != nil {
 		return nil, fmt.Errorf("请选择有效的音色")
 	}
 
@@ -118,9 +130,10 @@ func (s *Impl) CreatePreview(ctx context.Context, req *dubbing.PreviewReq) (*dub
 
 // CreateExport 导出配音（异步任务）
 func (s *Impl) CreateExport(ctx context.Context, req *dubbing.ExportReq) (*dubbing.TaskCreatedResp, error) {
-	var voice model.Voice
-	if err := s.db.Where("id = ? AND (visibility = ? OR user_id = ?)", req.VoiceID, "public", req.UserID).
-		First(&voice).Error; err != nil {
+	// 通过 voice-service RPC 校验音色
+	if _, err := s.voiceClient.ValidateForUser(ctx, &voice.ValidateVoiceReq{
+		Id: req.VoiceID, UserId: req.UserID,
+	}); err != nil {
 		return nil, fmt.Errorf("请选择有效的音色")
 	}
 
@@ -219,6 +232,17 @@ func jobToThrift(j *model.Job) *dubbing.Job {
 		job.VoiceName = &j.VoiceName
 	}
 	return job
+}
+
+// voiceToDubbing 将 voice-service 的 Voice 转换为 dubbing-service 的 Voice
+func voiceToDubbing(v *voice.Voice) *dubbing.Voice {
+	return &dubbing.Voice{
+		Id:             v.Id,
+		Name:           v.Name,
+		Tag:            v.Tag,
+		Avatar:         v.CoverUrl,
+		SampleAudioUrl: v.SampleAudioUrl,
+	}
 }
 
 

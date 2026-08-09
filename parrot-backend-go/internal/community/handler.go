@@ -1,27 +1,33 @@
 package community
 
 import (
+	"sort"
 	"strconv"
+	"strings"
 
-	"parrot-backend-go/internal/model"
+	"parrot-backend-go/kitex_gen/user"
+	"parrot-backend-go/kitex_gen/user/userservice"
+	"parrot-backend-go/kitex_gen/voice"
+	"parrot-backend-go/kitex_gen/voice/voiceservice"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type Handler struct {
-	db *gorm.DB
+	voiceClient voiceservice.Client
+	userClient  userservice.Client
 }
 
-func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{db: db}
+func NewHandler(vc voiceservice.Client, uc userservice.Client) *Handler {
+	return &Handler{voiceClient: vc, userClient: uc}
 }
 
 // ListVoices GET /api/community/voices（公开）
 func (h *Handler) ListVoices(c *gin.Context) {
+	ctx := c.Request.Context()
 	search := c.Query("search")
-	sort := c.DefaultQuery("sort", "recommend")
+	sortParam := c.DefaultQuery("sort", "recommend")
 	language := c.DefaultQuery("language", "all")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
@@ -32,51 +38,77 @@ func (h *Handler) ListVoices(c *gin.Context) {
 		pageSize = 12
 	}
 
-	query := h.db.Model(&model.Voice{}).Where("visibility = ?", "public")
-	if search != "" {
-		like := "%" + search + "%"
-		query = query.Where("name ILIKE ? OR description ILIKE ?", like, like)
-	}
-	if language != "all" {
-		query = query.Where("language = ?", language)
+	// voice-service 拉取所有公开声音，网关侧再做过滤/排序/分页
+	allVoices, err := h.voiceClient.ListPublic(ctx, &voice.ListPublicReq{Search: search, Filter: "all"})
+	if err != nil {
+		response.Fail(c, 500, 500, "获取声音列表失败")
+		return
 	}
 
-	switch sort {
+	// 客户端过滤：语言 + 搜索（大小写不敏感，兼容原 ILIKE 行为）
+	q := strings.ToLower(search)
+	filtered := make([]*voice.Voice, 0, len(allVoices))
+	for _, v := range allVoices {
+		if v == nil {
+			continue
+		}
+		if language != "all" && v.Language != language {
+			continue
+		}
+		if search != "" {
+			name := strings.ToLower(v.Name)
+			desc := strings.ToLower(v.Description)
+			if !strings.Contains(name, q) && !strings.Contains(desc, q) {
+				continue
+			}
+		}
+		filtered = append(filtered, v)
+	}
+
+	// 排序：recommend=likeCount DESC, newest=createdAt DESC, hot=playCount DESC
+	switch sortParam {
 	case "newest":
-		query = query.Order("created_at DESC")
+		sort.Slice(filtered, func(i, j int) bool { return filtered[i].CreatedAt > filtered[j].CreatedAt })
 	case "hot":
-		query = query.Order("play_count DESC")
+		sort.Slice(filtered, func(i, j int) bool { return filtered[i].PlayCount > filtered[j].PlayCount })
 	default:
-		query = query.Order("like_count DESC")
+		sort.Slice(filtered, func(i, j int) bool { return filtered[i].LikeCount > filtered[j].LikeCount })
 	}
 
-	var total int64
-	query.Count(&total)
+	total := int64(len(filtered))
 
-	var voices []model.Voice
-	query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&voices)
+	// 手动分页
+	start := (page - 1) * pageSize
+	if start > len(filtered) {
+		start = len(filtered)
+	}
+	end := start + pageSize
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	paged := filtered[start:end]
 
-	// 附加作者信息
-	items := make([]gin.H, len(voices))
-	for i, v := range voices {
-		var user model.User
-		h.db.First(&user, v.UserID)
+	// 批量获取作者信息
+	userMap := h.userMap(c, collectUserIDs(paged))
+
+	items := make([]gin.H, len(paged))
+	for i, v := range paged {
 		username := "未知用户"
 		userAvatar := ""
-		if user.ID > 0 {
-			username = user.Username
-			userAvatar = user.AvatarURL
+		if u := userMap[v.UserId]; u != nil {
+			username = u.Username
+			userAvatar = u.AvatarUrl
 		}
 		items[i] = gin.H{
-			"id":             v.ID,
+			"id":             v.Id,
 			"name":           v.Name,
 			"username":       username,
 			"userAvatar":     userAvatar,
 			"date":           v.CreatedAt,
 			"tag":            v.Tag,
 			"desc":           v.Description,
-			"avatar":         v.CoverURL,
-			"sampleAudioUrl": v.SampleAudioURL,
+			"avatar":         v.CoverUrl,
+			"sampleAudioUrl": v.SampleAudioUrl,
 			"stats": gin.H{
 				"play":     v.PlayCount,
 				"like":     v.LikeCount,
@@ -91,6 +123,7 @@ func (h *Handler) ListVoices(c *gin.Context) {
 
 // Rankings GET /api/community/rankings（公开）
 func (h *Handler) Rankings(c *gin.Context) {
+	ctx := c.Request.Context()
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "5"))
 	if page < 1 {
@@ -100,31 +133,32 @@ func (h *Handler) Rankings(c *gin.Context) {
 		pageSize = 5
 	}
 
-	var total int64
-	h.db.Model(&model.Voice{}).Where("visibility = ?", "public").Count(&total)
+	resp, err := h.voiceClient.GetRankings(ctx, &voice.RankingsReq{Page: int32(page), PageSize: int32(pageSize)})
+	if err != nil {
+		response.Fail(c, 500, 500, "获取排行榜失败")
+		return
+	}
 
-	var voices []model.Voice
-	h.db.Where("visibility = ?", "public").
-		Order("like_count DESC").
-		Offset((page - 1) * pageSize).Limit(pageSize).Find(&voices)
+	voices := resp.GetItems()
+	total := resp.GetTotal()
+
+	userMap := h.userMap(c, collectUserIDs(voices))
 
 	items := make([]gin.H, len(voices))
 	for i, v := range voices {
-		var user model.User
-		h.db.First(&user, v.UserID)
 		username := "未知用户"
 		userAvatar := ""
-		if user.ID > 0 {
-			username = user.Username
-			userAvatar = user.AvatarURL
+		if u := userMap[v.UserId]; u != nil {
+			username = u.Username
+			userAvatar = u.AvatarUrl
 		}
 		items[i] = gin.H{
-			"id":         v.ID,
+			"id":         v.Id,
 			"name":       v.Name,
 			"username":   username,
 			"likes":      v.LikeCount,
 			"userAvatar": userAvatar,
-			"avatar":     v.CoverURL,
+			"avatar":     v.CoverUrl,
 		}
 	}
 
@@ -152,39 +186,64 @@ func (h *Handler) Use(c *gin.Context) {
 }
 
 func (h *Handler) mutateStat(c *gin.Context, field, interactionType, msg string) {
+	ctx := c.Request.Context()
 	userID := c.MustGet("userID").(uint)
-	voiceID, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	voiceID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 
-	var voice model.Voice
-	if err := h.db.First(&voice, voiceID).Error; err != nil {
+	// voice-service 递增计数并返回最新声音
+	v, err := h.voiceClient.IncrementStat(ctx, &voice.IncrementStatReq{Id: int64(voiceID), Field: field})
+	if err != nil {
 		response.Fail404(c, "声音不存在")
 		return
 	}
 
-	// 更新计数
-	h.db.Model(&voice).Update(field, gorm.Expr(field+" + 1"))
-
-	// 创建互动记录 + 通知（like/favorite/use 才创建）
+	// like/favorite/use 才创建互动记录 + 通知
 	if interactionType != "play" {
-		interaction := &model.Interaction{
-			UserID:  voice.UserID,
-			ActorID: userID,
-			VoiceID: uint(voiceID),
+		label := map[string]string{"like": "点赞", "favorite": "收藏", "use": "使用"}[interactionType]
+		_, _ = h.userClient.CreateInteraction(ctx, &user.CreateInteractionReq{
+			UserId:  v.UserId,
+			ActorId: int64(userID),
+			VoiceId: int64(voiceID),
 			Type:    interactionType,
-		}
-		h.db.Create(interaction)
-
-		notif := &model.Notification{
-			UserID:  voice.UserID,
+		})
+		_, _ = h.userClient.CreateNotification(ctx, &user.CreateNotificationReq{
+			UserId:  v.UserId,
 			Type:    "info",
-			Title:   "你的声音收到了新的" + map[string]string{"like": "点赞", "favorite": "收藏", "use": "使用"}[interactionType],
-			Desc:    "作品「" + voice.Name + "」被" + map[string]string{"like": "点赞", "favorite": "收藏", "use": "使用"}[interactionType] + "。",
-			EventID: interactionType + "-" + strconv.Itoa(int(userID)) + "-" + strconv.Itoa(int(voiceID)),
-		}
-		h.db.Where("event_id = ?", notif.EventID).FirstOrCreate(notif)
+			Title:   "你的声音收到了新的" + label,
+			Desc:    "作品「" + v.Name + "」被" + label + "。",
+			EventId: interactionType + "-" + strconv.Itoa(int(userID)) + "-" + strconv.Itoa(int(voiceID)),
+		})
 	}
 
-	// 重新查询返回最新数据
-	h.db.First(&voice, voiceID)
-	response.OK(c, voice, msg)
+	response.OK(c, v, msg)
+}
+
+// collectUserIDs 从声音列表中收集去重的作者 ID
+func collectUserIDs(voices []*voice.Voice) []int64 {
+	seen := map[int64]bool{}
+	ids := []int64{}
+	for _, v := range voices {
+		if v == nil || seen[v.UserId] {
+			continue
+		}
+		seen[v.UserId] = true
+		ids = append(ids, v.UserId)
+	}
+	return ids
+}
+
+// userMap 批量获取用户信息并构建 id -> User 映射
+func (h *Handler) userMap(c *gin.Context, ids []int64) map[int64]*user.User {
+	m := map[int64]*user.User{}
+	if len(ids) == 0 {
+		return m
+	}
+	users, err := h.userClient.GetUsersByIDs(c.Request.Context(), ids)
+	if err != nil {
+		return m
+	}
+	for _, u := range users {
+		m[u.Id] = u
+	}
+	return m
 }

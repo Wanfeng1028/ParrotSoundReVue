@@ -1,12 +1,17 @@
 package admin
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/model"
+	"parrot-backend-go/kitex_gen/user"
+	"parrot-backend-go/kitex_gen/user/userservice"
+	"parrot-backend-go/kitex_gen/voice"
+	"parrot-backend-go/kitex_gen/voice/voiceservice"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -16,12 +21,14 @@ import (
 )
 
 type Handler struct {
-	db  *gorm.DB
-	cfg *config.Config
+	db          *gorm.DB
+	cfg         *config.Config
+	voiceClient voiceservice.Client
+	userClient  userservice.Client
 }
 
-func NewHandler(db *gorm.DB, cfg *config.Config) *Handler {
-	return &Handler{db: db, cfg: cfg}
+func NewHandler(db *gorm.DB, cfg *config.Config, vc voiceservice.Client, uc userservice.Client) *Handler {
+	return &Handler{db: db, cfg: cfg, voiceClient: vc, userClient: uc}
 }
 
 // AdminClaims 管理员 JWT 载荷
@@ -120,9 +127,9 @@ func (h *Handler) Profile(c *gin.Context) {
 func (h *Handler) UpdateProfile(c *gin.Context) {
 	admin := c.MustGet("admin").(*model.Admin)
 	var req struct {
-		Phone    string `json:"phone"`
-		Age      string `json:"age"`
-		Gender   string `json:"gender"`
+		Phone     string `json:"phone"`
+		Age       string `json:"age"`
+		Gender    string `json:"gender"`
 		AvatarURL string `json:"avatarUrl"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -131,9 +138,9 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"phone":     req.Phone,
-		"age":       req.Age,
-		"gender":    req.Gender,
+		"phone":      req.Phone,
+		"age":        req.Age,
+		"gender":     req.Gender,
 		"avatar_url": req.AvatarURL,
 		"updated_at": time.Now(),
 	}
@@ -177,22 +184,23 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 
 // Stats GET /api/admin/stats
 func (h *Handler) Stats(c *gin.Context) {
-	var userCount, voiceCount, jobCount, feedbackCount int64
-	h.db.Model(&model.User{}).Count(&userCount)
-	h.db.Model(&model.Voice{}).Count(&voiceCount)
+	ctx := c.Request.Context()
+
+	userCount, _ := h.userClient.CountAll(ctx)
+	voiceCount, _ := h.voiceClient.CountAll(ctx)
+	publicVoices, _ := h.voiceClient.CountByVisibility(ctx, "public")
+	privateVoices, _ := h.voiceClient.CountByVisibility(ctx, "private")
+
+	var jobCount, feedbackCount int64
 	h.db.Model(&model.Job{}).Count(&jobCount)
 	h.db.Model(&model.Feedback{}).Count(&feedbackCount)
 
-	var publicVoices, privateVoices int64
-	h.db.Model(&model.Voice{}).Where("visibility = ?", "public").Count(&publicVoices)
-	h.db.Model(&model.Voice{}).Where("visibility = ?", "private").Count(&privateVoices)
-
 	response.OK(c, gin.H{
 		"overview": gin.H{
-			"users":      userCount,
-			"voices":     voiceCount,
-			"jobs":       jobCount,
-			"feedbacks":  feedbackCount,
+			"users":         userCount,
+			"voices":        voiceCount,
+			"jobs":          jobCount,
+			"feedbacks":     feedbackCount,
 			"publicVoices":  publicVoices,
 			"privateVoices": privateVoices,
 		},
@@ -201,9 +209,12 @@ func (h *Handler) Stats(c *gin.Context) {
 
 // System GET /api/admin/system
 func (h *Handler) System(c *gin.Context) {
-	var userCount, voiceCount, jobCount int64
-	h.db.Model(&model.User{}).Count(&userCount)
-	h.db.Model(&model.Voice{}).Count(&voiceCount)
+	ctx := c.Request.Context()
+
+	userCount, _ := h.userClient.CountAll(ctx)
+	voiceCount, _ := h.voiceClient.CountAll(ctx)
+
+	var jobCount int64
 	h.db.Model(&model.Job{}).Count(&jobCount)
 
 	response.OK(c, gin.H{
@@ -222,6 +233,7 @@ func (h *Handler) System(c *gin.Context) {
 
 // ListUsers GET /api/admin/users
 func (h *Handler) ListUsers(c *gin.Context) {
+	ctx := c.Request.Context()
 	search := c.Query("search")
 	status := c.Query("status")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -233,95 +245,85 @@ func (h *Handler) ListUsers(c *gin.Context) {
 		pageSize = 12
 	}
 
-	query := h.db.Model(&model.User{})
-	if search != "" {
-		like := "%" + search + "%"
-		query = query.Where("username ILIKE ? OR email ILIKE ?", like, like)
+	resp, err := h.userClient.AdminListUsers(ctx, &user.AdminListUsersReq{
+		Search:   search,
+		Status:   status,
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	})
+	if err != nil {
+		response.Fail(c, 500, 500, "获取用户列表失败")
+		return
 	}
-	if status != "" {
-		query = query.Where("status = ?", status)
-	}
-
-	var total int64
-	query.Count(&total)
 
 	var users []model.User
-	query.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&users)
+	if err := json.Unmarshal(resp.GetItems(), &users); err != nil {
+		response.Fail(c, 500, 500, "解析用户列表失败")
+		return
+	}
 
-	response.Paginated(c, users, total, page, pageSize)
+	response.Paginated(c, users, resp.GetTotal(), page, pageSize)
 }
 
 // GetUser GET /api/admin/users/:id
 func (h *Handler) GetUser(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	var user model.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	ctx := c.Request.Context()
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+
+	u, err := h.userClient.AdminGetUser(ctx, int64(id))
+	if err != nil {
 		response.Fail404(c, "用户不存在")
 		return
 	}
-	response.OK(c, user)
+	response.OK(c, u)
 }
 
 // UpdateUser PUT /api/admin/users/:id
 func (h *Handler) UpdateUser(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req struct {
-		Username   string `json:"username"`
-		Phone      string `json:"phone"`
-		Age        string `json:"age"`
-		Gender     string `json:"gender"`
-		AvatarURL  string `json:"avatarUrl"`
-		Status     string `json:"status"`
-		Role       string `json:"role"`
+		Username  *string `json:"username"`
+		Phone     *string `json:"phone"`
+		Age       *string `json:"age"`
+		Gender    *string `json:"gender"`
+		AvatarURL *string `json:"avatarUrl"`
+		Status    *string `json:"status"`
+		Role      *string `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
 
-	updates := map[string]interface{}{}
-	if req.Username != "" {
-		updates["username"] = req.Username
-	}
-	if req.Phone != "" {
-		updates["phone"] = req.Phone
-	}
-	if req.Age != "" {
-		updates["age"] = req.Age
-	}
-	if req.Gender != "" {
-		updates["gender"] = req.Gender
-	}
-	if req.AvatarURL != "" {
-		updates["avatar_url"] = req.AvatarURL
-	}
-	if req.Status != "" {
-		updates["status"] = req.Status
-	}
-	if req.Role != "" {
-		updates["role"] = req.Role
-	}
-
-	result := h.db.Model(&model.User{}).Where("id = ?", id).Updates(updates)
-	if result.RowsAffected == 0 {
+	updated, err := h.userClient.AdminUpdateUser(ctx, &user.AdminUpdateUserReq{
+		Id:        int64(id),
+		Username:  req.Username,
+		Phone:     req.Phone,
+		Age:       req.Age,
+		Gender:    req.Gender,
+		AvatarUrl: req.AvatarURL,
+		Status:    req.Status,
+		Role:      req.Role,
+	})
+	if err != nil {
 		response.Fail404(c, "用户不存在")
 		return
 	}
-
-	var user model.User
-	h.db.First(&user, id)
-	response.OK(c, user, "用户已更新")
+	response.OK(c, updated, "用户已更新")
 }
 
 // DeleteUser DELETE /api/admin/users/:id
 func (h *Handler) DeleteUser(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	h.db.Delete(&model.User{}, id)
+	ctx := c.Request.Context()
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	h.userClient.AdminDeleteUser(ctx, int64(id))
 	response.OK(c, nil, "用户及其关联数据已删除")
 }
 
 // ListVoices GET /api/admin/voices
 func (h *Handler) ListVoices(c *gin.Context) {
+	ctx := c.Request.Context()
 	visibility := c.Query("visibility")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "12"))
@@ -332,59 +334,51 @@ func (h *Handler) ListVoices(c *gin.Context) {
 		pageSize = 12
 	}
 
-	query := h.db.Model(&model.Voice{})
-	if visibility != "" {
-		query = query.Where("visibility = ?", visibility)
+	resp, err := h.voiceClient.AdminList(ctx, &voice.AdminListVoicesReq{
+		Visibility: visibility,
+		Page:       int32(page),
+		PageSize:   int32(pageSize),
+	})
+	if err != nil {
+		response.Fail(c, 500, 500, "获取声音列表失败")
+		return
 	}
 
-	var total int64
-	query.Count(&total)
-
-	var voices []model.Voice
-	query.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&voices)
-
-	response.Paginated(c, voices, total, page, pageSize)
+	response.Paginated(c, resp.GetItems(), resp.GetTotal(), page, pageSize)
 }
 
 // UpdateVoice PUT /api/admin/voices/:id
 func (h *Handler) UpdateVoice(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
 	var req struct {
-		Visibility string `json:"visibility"`
-		Name       string `json:"name"`
-		Tag        string `json:"tag"`
+		Visibility *string `json:"visibility"`
+		Name       *string `json:"name"`
+		Tag        *string `json:"tag"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
 		return
 	}
 
-	updates := map[string]interface{}{}
-	if req.Visibility != "" {
-		updates["visibility"] = req.Visibility
-	}
-	if req.Name != "" {
-		updates["name"] = req.Name
-	}
-	if req.Tag != "" {
-		updates["tag"] = req.Tag
-	}
-
-	result := h.db.Model(&model.Voice{}).Where("id = ?", id).Updates(updates)
-	if result.RowsAffected == 0 {
+	updated, err := h.voiceClient.AdminUpdate(ctx, &voice.AdminUpdateVoiceReq{
+		Id:         int64(id),
+		Visibility: req.Visibility,
+		Name:       req.Name,
+		Tag:        req.Tag,
+	})
+	if err != nil {
 		response.Fail404(c, "声音不存在")
 		return
 	}
-
-	var voice model.Voice
-	h.db.First(&voice, id)
-	response.OK(c, voice, "声音已更新")
+	response.OK(c, updated, "声音已更新")
 }
 
 // DeleteVoice DELETE /api/admin/voices/:id
 func (h *Handler) DeleteVoice(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	h.db.Delete(&model.Voice{}, id)
+	ctx := c.Request.Context()
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	h.voiceClient.AdminDelete(ctx, int64(id))
 	response.OK(c, nil, "声音已删除")
 }
 
@@ -477,6 +471,7 @@ func (h *Handler) DeleteTeaching(c *gin.Context) {
 
 // Broadcast POST /api/admin/notifications/broadcast
 func (h *Handler) Broadcast(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		Title string `json:"title"`
 		Desc  string `json:"desc"`
@@ -499,22 +494,17 @@ func (h *Handler) Broadcast(c *gin.Context) {
 		notifType = "system"
 	}
 
-	// 给所有用户创建通知
-	var users []model.User
-	h.db.Find(&users)
-
-	for i, u := range users {
-		notif := &model.Notification{
-			UserID:  u.ID,
-			Type:    notifType,
-			Title:   title,
-			Desc:    desc,
-			EventID: "broadcast-" + strconv.Itoa(int(time.Now().UnixNano())) + "-" + strconv.Itoa(i),
-		}
-		h.db.Create(notif)
+	count, err := h.userClient.AdminBroadcast(ctx, &user.BroadcastReq{
+		Title: title,
+		Desc:  desc,
+		Type:  notifType,
+	})
+	if err != nil {
+		response.Fail(c, 500, 500, "公告推送失败")
+		return
 	}
 
-	response.OK(c, gin.H{"recipients": len(users)}, "公告已推送给 "+strconv.Itoa(len(users))+" 位用户")
+	response.OK(c, gin.H{"recipients": count}, "公告已推送给 "+strconv.Itoa(int(count))+" 位用户")
 }
 
 func (h *Handler) createAdminToken(admin *model.Admin) (string, error) {

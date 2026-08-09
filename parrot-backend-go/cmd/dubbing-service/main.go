@@ -6,13 +6,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"parrot-backend-go/internal/ai"
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/dubbing_svc"
 	"parrot-backend-go/internal/task"
 	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
+	"parrot-backend-go/kitex_gen/voice/voiceservice"
 
+	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	registryetcd "github.com/kitex-contrib/registry-etcd"
@@ -41,10 +44,13 @@ func main() {
 	reaper := task.NewReaper(db, task.DefaultTimeouts())
 	reaper.Start()
 
-	// 3. 创建 DubbingService 实现并注册 Kitex 服务
-	impl := dubbing_svc.NewImpl(db, taskQueue, aiClient, cfg)
+	// 3. 创建 voice-service 客户端（用于音色校验）
+	voiceClient := newVoiceClient(cfg)
 
-	// 4. etcd 服务注册
+	// 4. 创建 DubbingService 实现并注册 Kitex 服务
+	impl := dubbing_svc.NewImpl(db, taskQueue, aiClient, cfg, voiceClient)
+
+	// 5. etcd 服务注册
 	registryAddr := cfg.EtcdAddr
 	if registryAddr == "" {
 		registryAddr = "127.0.0.1:2379"
@@ -68,7 +74,7 @@ func main() {
 		}),
 	)
 
-	// 5. 启动 Kitex 服务（后台 goroutine）
+	// 6. 启动 Kitex 服务（后台 goroutine）
 	go func() {
 		log.Printf("[dubbing-service] 启动，监听 %s，已注册到 etcd (%s)", addr, registryAddr)
 		if err := svr.Run(); err != nil {
@@ -76,12 +82,40 @@ func main() {
 		}
 	}()
 
-	// 6. 优雅关闭
+	// 7. 优雅关闭
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("[dubbing-service] 服务关闭中...")
 	svr.Stop()
+}
+
+// newVoiceClient 创建 voice-service 的 Kitex 客户端
+func newVoiceClient(cfg *config.Config) voiceservice.Client {
+	opts := []client.Option{
+		client.WithRPCTimeout(10 * time.Second),
+		client.WithConnectTimeout(3 * time.Second),
+	}
+
+	if cfg.EtcdAddr != "" {
+		r, err := registryetcd.NewEtcdResolver([]string{cfg.EtcdAddr})
+		if err != nil {
+			log.Fatalf("etcd resolver 初始化失败: %v", err)
+		}
+		opts = append(opts, client.WithResolver(r))
+	} else {
+		addr := os.Getenv("VOICE_SERVICE_ADDR")
+		if addr == "" {
+			addr = "127.0.0.1:8889"
+		}
+		opts = append(opts, client.WithHostPorts(addr))
+	}
+
+	cli, err := voiceservice.NewClient("parrot.voice", opts...)
+	if err != nil {
+		log.Fatalf("voice-service 客户端创建失败: %v", err)
+	}
+	return cli
 }
 
 // initDB 初始化 PostgreSQL 连接（不执行迁移和种子，由网关负责）

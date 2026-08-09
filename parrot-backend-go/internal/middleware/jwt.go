@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 )
 
 // Claims JWT 载荷，与 Node 版 {userId, email} 对齐
@@ -33,8 +32,9 @@ func CreateToken(user *model.User, secret string) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
-// JWTAuth JWT 认证中间件，验证 Bearer token 并加载用户到 context
-func JWTAuth(secret string, db *gorm.DB) gin.HandlerFunc {
+// JWTAuth JWT 认证中间件（无状态，阶段 2.3 起不再查 DB）
+// users 表归 user-service，中间件只验证签名 + 解析 claims
+func JWTAuth(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		token := strings.TrimPrefix(header, "Bearer ")
@@ -54,23 +54,8 @@ func JWTAuth(secret string, db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 查用户，确保用户仍然存在且有效
-		var user model.User
-		if err := db.First(&user, claims.UserID).Error; err != nil {
-			response.Fail401(c, "登录状态无效")
-			c.Abort()
-			return
-		}
-		if user.Status == "disabled" {
-			response.Fail401(c, "账户已停用")
-			c.Abort()
-			return
-		}
-
-		c.Set("userID", user.ID)
-		c.Set("email", user.Email)
-		c.Set("role", user.Role)
-		c.Set("user", &user)
+		c.Set("userID", claims.UserID)
+		c.Set("email", claims.Email)
 		c.Next()
 	}
 }
