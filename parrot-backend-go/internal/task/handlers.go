@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"parrot-backend-go/internal/ai"
+	"parrot-backend-go/internal/event"
 	"parrot-backend-go/internal/model"
 
 	"github.com/hibiken/asynq"
@@ -102,15 +103,15 @@ func (h *Handlers) HandleDubbingPreview(ctx context.Context, t *asynq.Task) erro
 	}
 
 	job := &model.Job{
-		UserID:     payload.UserID,
-		Type:       "audio",
-		Title:      title,
-		Text:       payload.Text,
-		VoiceID:    &payload.VoiceID,
-		VoiceName:  voice.Name,
-		Status:     "completed",
-		AudioURL:   voice.SampleAudioURL,
-		Settings:   datatypes.JSON(payload.Settings),
+		UserID:    payload.UserID,
+		Type:      "audio",
+		Title:     title,
+		Text:      payload.Text,
+		VoiceID:   &payload.VoiceID,
+		VoiceName: voice.Name,
+		Status:    "completed",
+		AudioURL:  voice.SampleAudioURL,
+		Settings:  datatypes.JSON(payload.Settings),
 	}
 	if err := h.db.Create(job).Error; err != nil {
 		h.queue.logTaskError(taskID, err)
@@ -144,37 +145,40 @@ func (h *Handlers) HandleDubbingExport(ctx context.Context, t *asynq.Task) error
 		return nil
 	}
 
-	// 创建 job 记录
+	// 创建 job 记录 + 写 outbox 事件（同一事务，保证业务与事件原子性）
+	// 阶段 2.4：不再直接写 notifications 表（归 user-service），
+	// 改为写 event_outbox，由后台协程发布事件，user-service 消费后写通知
 	title := payload.Title
 	if title == "" {
 		title = "导出音频"
 	}
 
 	job := &model.Job{
-		UserID:     payload.UserID,
-		Type:       "audio",
-		Title:      title,
-		Text:       payload.Text,
-		VoiceID:    &payload.VoiceID,
-		VoiceName:  voice.Name,
-		Status:     "completed",
-		AudioURL:   voice.SampleAudioURL,
-		Settings:   datatypes.JSON(payload.Settings),
+		UserID:    payload.UserID,
+		Type:      "audio",
+		Title:     title,
+		Text:      payload.Text,
+		VoiceID:   &payload.VoiceID,
+		VoiceName: voice.Name,
+		Status:    "completed",
+		AudioURL:  voice.SampleAudioURL,
+		Settings:  datatypes.JSON(payload.Settings),
 	}
-	if err := h.db.Create(job).Error; err != nil {
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(job).Error; err != nil {
+			return err
+		}
+		return event.AppendToOutbox(tx, event.EventDubbingExportDone,
+			event.DubbingExportDoneEvent{
+				UserID: payload.UserID,
+				JobID:  job.ID,
+				Title:  job.Title,
+			})
+	})
+	if err != nil {
 		h.queue.logTaskError(taskID, err)
 		return err
 	}
-
-	// 创建通知（带幂等键）
-	notif := &model.Notification{
-		UserID:  payload.UserID,
-		Type:    "info",
-		Title:   "音频导出完成",
-		Desc:    fmt.Sprintf("作品「%s」已进入音频记录。", job.Title),
-		EventID: taskID, // 用 taskID 做幂等键
-	}
-	h.db.Where("event_id = ?", taskID).FirstOrCreate(notif)
 
 	h.queue.markCompleted(taskID, job)
 	return nil

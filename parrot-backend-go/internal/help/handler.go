@@ -1,10 +1,13 @@
 package help
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"parrot-backend-go/internal/model"
+	"parrot-backend-go/kitex_gen/user"
+	"parrot-backend-go/kitex_gen/user/userservice"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +15,12 @@ import (
 )
 
 type Handler struct {
-	db *gorm.DB
+	db         *gorm.DB
+	userClient userservice.Client
 }
 
-func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *gorm.DB, userClient userservice.Client) *Handler {
+	return &Handler{db: db, userClient: userClient}
 }
 
 // ListTutorials GET /api/help/tutorials（公开）
@@ -101,15 +105,15 @@ func (h *Handler) SubmitFeedback(c *gin.Context) {
 		return
 	}
 
-	// 发通知
-	notif := &model.Notification{
-		UserID:  userID,
+	// 发通知（通过 user-service RPC，notifications 表归 user-service 独占）
+	eventID := fmt.Sprintf("feedback-%d", feedback.ID)
+	_, _ = h.userClient.CreateNotification(c.Request.Context(), &user.CreateNotificationReq{
+		UserId:  int64(userID),
 		Type:    "system",
 		Title:   "反馈已收到",
 		Desc:    "感谢你的建议，我们会持续优化产品体验。",
-		EventID: "feedback-" + strconv.Itoa(int(feedback.ID)),
-	}
-	h.db.Where("event_id = ?", notif.EventID).FirstOrCreate(notif)
+		EventId: eventID,
+	})
 
 	response.OK(c, feedback, "反馈提交成功")
 }

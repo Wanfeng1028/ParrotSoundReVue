@@ -9,6 +9,8 @@ import (
 
 	"parrot-backend-go/internal/cache"
 	"parrot-backend-go/internal/config"
+	"parrot-backend-go/internal/event"
+	"parrot-backend-go/internal/model"
 	"parrot-backend-go/internal/user_svc"
 	"parrot-backend-go/kitex_gen/user/userservice"
 
@@ -22,6 +24,7 @@ import (
 
 // user-service 独立微服务入口
 // 阶段 2.3：用户服务（含认证、通知、互动），独占 users/notifications/interactions 表
+// 阶段 2.4：消费 events 队列，幂等写入 notifications 表（跨服务事件通信的消费端）
 func main() {
 	cfg := config.Load()
 
@@ -29,6 +32,11 @@ func main() {
 	redisCache := cache.New(cfg.RedisURL)
 
 	impl := user_svc.NewImpl(db, redisCache, cfg.JWTSecret)
+
+	// 2.4 启动事件消费 Worker：监听 events 队列，消费其他服务发布的事件
+	// 配音导出完成、声音克隆完成、反馈收到等事件 → 幂等写 notifications
+	eventHandlers := event.NewEventHandlers(db)
+	eventWorker := event.StartEventWorker(cfg.RedisURL, eventHandlers)
 
 	// etcd 服务注册
 	registryAddr := cfg.EtcdAddr
@@ -64,6 +72,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("[user-service] 服务关闭中...")
+	eventWorker.Shutdown()
 	svr.Stop()
 }
 
@@ -77,6 +86,16 @@ func initDB(cfg *config.Config) *gorm.DB {
 	sqlDB, _ := db.DB()
 	sqlDB.SetMaxOpenConns(15)
 	sqlDB.SetMaxIdleConns(5)
+
+	// 确保本服务独占的表存在（独立部署时网关可能未启动）
+	if err := db.AutoMigrate(
+		&model.User{},
+		&model.Notification{},
+		&model.Interaction{},
+	); err != nil {
+		log.Fatalf("[user-service] 表迁移失败: %v", err)
+	}
+
 	log.Println("[user-service] PostgreSQL 连接成功")
 	return db
 }

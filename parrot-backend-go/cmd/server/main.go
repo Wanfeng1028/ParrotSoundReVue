@@ -15,6 +15,7 @@ import (
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/database"
 	"parrot-backend-go/internal/dubbing"
+	"parrot-backend-go/internal/event"
 	"parrot-backend-go/internal/help"
 	"parrot-backend-go/internal/router"
 	"parrot-backend-go/internal/system"
@@ -46,6 +47,13 @@ func main() {
 	reaper := task.NewReaper(db, task.DefaultTimeouts())
 	reaper.Start()
 
+	// 阶段 2.4：outbox 发布器（网关 Worker 可能执行配音导出写 outbox，需发布事件）
+	eventBus := event.NewBus(cfg.RedisURL)
+	defer eventBus.Close()
+	outboxPublisher := event.NewOutboxPublisher(db, eventBus)
+	outboxPublisher.Start()
+	defer outboxPublisher.Stop()
+
 	// 阶段 2：Kitex 微服务客户端
 	dubbingClient := newKitexClient("parrot.dubbing", "DUBBING_SERVICE_ADDR", "127.0.0.1:8888", cfg).(dubbingservice.Client)
 	voiceClient := newKitexClient("parrot.voice", "VOICE_SERVICE_ADDR", "127.0.0.1:8889", cfg).(voiceservice.Client)
@@ -58,7 +66,7 @@ func main() {
 	voiceHandler := voice.NewHandler(voiceClient, userClient)
 	teachingHandler := teaching.NewHandler(db, taskQueue, cfg)
 	communityHandler := community.NewHandler(voiceClient, userClient)
-	helpHandler := help.NewHandler(db)
+	helpHandler := help.NewHandler(db, userClient)
 	userHandler := user.NewHandler(db, userClient)
 	adminHandler := admin.NewHandler(db, cfg, voiceClient, userClient)
 	systemHandler := system.NewHandler(cfg)

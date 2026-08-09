@@ -11,6 +11,8 @@ import (
 	"parrot-backend-go/internal/ai"
 	"parrot-backend-go/internal/config"
 	"parrot-backend-go/internal/dubbing_svc"
+	"parrot-backend-go/internal/event"
+	"parrot-backend-go/internal/model"
 	"parrot-backend-go/internal/task"
 	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
 	"parrot-backend-go/kitex_gen/voice/voiceservice"
@@ -43,6 +45,16 @@ func main() {
 
 	reaper := task.NewReaper(db, task.DefaultTimeouts())
 	reaper.Start()
+
+	// 2.4 事件总线 + outbox 发布器（跨服务最终一致性）
+	// 配音导出完成后写 event_outbox，后台协程发布到 Asynq events 队列，
+	// user-service 消费后写 notifications
+	eventBus := event.NewBus(cfg.RedisURL)
+	defer eventBus.Close()
+
+	outboxPublisher := event.NewOutboxPublisher(db, eventBus)
+	outboxPublisher.Start()
+	defer outboxPublisher.Stop()
 
 	// 3. 创建 voice-service 客户端（用于音色校验）
 	voiceClient := newVoiceClient(cfg)
@@ -119,6 +131,7 @@ func newVoiceClient(cfg *config.Config) voiceservice.Client {
 }
 
 // initDB 初始化 PostgreSQL 连接（不执行迁移和种子，由网关负责）
+// 仅确保本服务独占写入的 event_outbox 表存在
 func initDB(cfg *config.Config) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(cfg.PGDSN()), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
@@ -130,6 +143,11 @@ func initDB(cfg *config.Config) *gorm.DB {
 	sqlDB, _ := db.DB()
 	sqlDB.SetMaxOpenConns(15)
 	sqlDB.SetMaxIdleConns(5)
+
+	// 确保本服务写入的 outbox 表存在（独立部署时网关可能未启动）
+	if err := db.AutoMigrate(&model.EventOutbox{}); err != nil {
+		log.Fatalf("[dubbing-service] event_outbox 迁移失败: %v", err)
+	}
 
 	log.Println("[dubbing-service] PostgreSQL 连接成功")
 	return db
