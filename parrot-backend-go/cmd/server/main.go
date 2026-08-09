@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"parrot-backend-go/internal/admin"
 	"parrot-backend-go/internal/ai"
@@ -21,6 +22,10 @@ import (
 	"parrot-backend-go/internal/teaching"
 	"parrot-backend-go/internal/user"
 	"parrot-backend-go/internal/voice"
+	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
+
+	"github.com/cloudwego/kitex/client"
+	registryetcd "github.com/kitex-contrib/registry-etcd"
 )
 
 func main() {
@@ -32,6 +37,8 @@ func main() {
 	aiClient := ai.New(cfg.AIBaseURL, cfg.AIAPIKey, cfg.AIDefaultModel)
 
 	// 任务队列 + Worker + Reaper
+	// 阶段 2：网关仍保留 Worker 处理教学模块发起的配音任务（复用 TypeDubbingExport）
+	// dubbing-service 也有自己的 Worker，两者共享同一 Redis 队列，Asynq 自动负载均衡
 	taskQueue := task.NewQueue(db, cfg.RedisURL)
 	defer taskQueue.Close()
 	taskHandlers := task.NewHandlers(taskQueue, aiClient, db)
@@ -44,9 +51,9 @@ func main() {
 	authService := auth.NewService(authRepo, redisCache, cfg.JWTSecret)
 	authHandler := auth.NewHandler(authService)
 
-	dubbingRepo := dubbing.NewRepository(db)
-	dubbingService := dubbing.NewService(dubbingRepo, taskQueue, cfg)
-	dubbingHandler := dubbing.NewHandler(dubbingService)
+	// 阶段 2：配音模块通过 Kitex RPC 调用 dubbing-service
+	dubbingClient := newDubbingClient(cfg)
+	dubbingHandler := dubbing.NewHandler(dubbingClient)
 
 	taskHandler := task.NewTaskHandler(taskQueue)
 
@@ -70,7 +77,7 @@ func main() {
 
 	// 优雅关闭
 	go func() {
-		log.Printf("服务启动，监听 :%s", cfg.Port)
+		log.Printf("网关启动，监听 :%s", cfg.Port)
 		if err := r.Run(":" + cfg.Port); err != nil {
 			log.Fatalf("服务启动失败: %v", err)
 		}
@@ -80,4 +87,37 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("服务关闭中...")
+}
+
+// newDubbingClient 创建 dubbing-service 的 Kitex 客户端
+// 优先使用 etcd 服务发现；未配置 etcd 时回退到直连模式（本地开发用）
+func newDubbingClient(cfg *config.Config) dubbingservice.Client {
+	opts := []client.Option{
+		client.WithRPCTimeout(10 * time.Second),
+		client.WithConnectTimeout(3 * time.Second),
+	}
+
+	if cfg.EtcdAddr != "" {
+		// etcd 服务发现模式
+		r, err := registryetcd.NewEtcdResolver([]string{cfg.EtcdAddr})
+		if err != nil {
+			log.Fatalf("etcd resolver 初始化失败: %v", err)
+		}
+		opts = append(opts, client.WithResolver(r))
+		log.Printf("配音服务客户端：etcd 服务发现 (%s)", cfg.EtcdAddr)
+	} else {
+		// 直连模式（本地开发，未部署 etcd 时使用）
+		addr := os.Getenv("DUBBING_SERVICE_ADDR")
+		if addr == "" {
+			addr = "127.0.0.1:8888"
+		}
+		opts = append(opts, client.WithHostPorts(addr))
+		log.Printf("配音服务客户端：直连模式 (%s)", addr)
+	}
+
+	cli, err := dubbingservice.NewClient("parrot.dubbing", opts...)
+	if err != nil {
+		log.Fatalf("dubbing-service 客户端创建失败: %v", err)
+	}
+	return cli
 }

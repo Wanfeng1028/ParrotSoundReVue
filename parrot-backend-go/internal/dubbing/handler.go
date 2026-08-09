@@ -1,31 +1,39 @@
 package dubbing
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 
+	"parrot-backend-go/kitex_gen/dubbing"
+	"parrot-backend-go/kitex_gen/dubbing/dubbingservice"
 	"parrot-backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
+// Handler 网关侧配音 HTTP 处理器
+// 阶段 2：不再直接调用本地 Service，而是通过 Kitex RPC 调用 dubbing-service
 type Handler struct {
-	svc *Service
+	client dubbingservice.Client
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+// NewHandler 创建配音处理器，传入 Kitex 客户端
+func NewHandler(client dubbingservice.Client) *Handler {
+	return &Handler{client: client}
 }
 
 // GetOptions GET /api/dubbing/options
 func (h *Handler) GetOptions(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
-	data, err := h.svc.GetOptions(userID)
+	resp, err := h.client.GetOptions(c.Request.Context(), &dubbing.GetOptionsReq{
+		UserID: int64(userID),
+	})
 	if err != nil {
-		response.Fail400(c, "获取选项失败")
+		response.Fail(c, 500, 500, "配音服务暂时不可用")
 		return
 	}
-	response.OK(c, data)
+	response.OK(c, resp)
 }
 
 // AIGenerate POST /api/dubbing/ai-generate
@@ -46,22 +54,25 @@ func (h *Handler) AIGenerate(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	taskID, err := h.svc.GenerateDraft(c.Request.Context(), userID, prompt, req.Model)
+	resp, err := h.client.GenerateDraft(c.Request.Context(), &dubbing.GenerateDraftReq{
+		UserID: int64(userID),
+		Prompt: prompt,
+		Model:  req.Model,
+	})
 	if err != nil {
-		response.Fail400(c, err.Error())
+		response.Fail(c, 500, 500, "配音服务暂时不可用")
 		return
 	}
-
-	response.TaskCreated(c, taskID)
+	response.TaskCreated(c, resp.TaskId)
 }
 
 // Preview POST /api/dubbing/preview
 func (h *Handler) Preview(c *gin.Context) {
 	var req struct {
-		Text     string `json:"text"`
-		VoiceID  uint   `json:"voiceId"`
-		Title    string `json:"title"`
-		Settings []byte `json:"settings"`
+		Text     string          `json:"text"`
+		VoiceID  uint            `json:"voiceId"`
+		Title    string          `json:"title"`
+		Settings json.RawMessage `json:"settings"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
@@ -75,27 +86,32 @@ func (h *Handler) Preview(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	taskID, err := h.svc.Preview(c.Request.Context(), userID, text, req.VoiceID, req.Title, req.Settings)
+	resp, err := h.client.CreatePreview(c.Request.Context(), &dubbing.PreviewReq{
+		UserID:   int64(userID),
+		Text:     text,
+		VoiceID:  int64(req.VoiceID),
+		Title:    req.Title,
+		Settings: []byte(req.Settings),
+	})
 	if err != nil {
 		msg := err.Error()
-		if msg == "请选择有效的音色" {
-			response.Fail404(c, msg)
+		if strings.Contains(msg, "有效的音色") {
+			response.Fail404(c, "请选择有效的音色")
 			return
 		}
-		response.Fail400(c, msg)
+		response.Fail(c, 500, 500, "配音服务暂时不可用")
 		return
 	}
-
-	response.TaskCreated(c, taskID)
+	response.TaskCreated(c, resp.TaskId)
 }
 
 // Export POST /api/dubbing/export
 func (h *Handler) Export(c *gin.Context) {
 	var req struct {
-		Text     string `json:"text"`
-		VoiceID  uint   `json:"voiceId"`
-		Title    string `json:"title"`
-		Settings []byte `json:"settings"`
+		Text     string          `json:"text"`
+		VoiceID  uint            `json:"voiceId"`
+		Title    string          `json:"title"`
+		Settings json.RawMessage `json:"settings"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail400(c, "请求参数错误")
@@ -109,18 +125,23 @@ func (h *Handler) Export(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	taskID, err := h.svc.Export(c.Request.Context(), userID, text, req.VoiceID, req.Title, req.Settings)
+	resp, err := h.client.CreateExport(c.Request.Context(), &dubbing.ExportReq{
+		UserID:   int64(userID),
+		Text:     text,
+		VoiceID:  int64(req.VoiceID),
+		Title:    req.Title,
+		Settings: []byte(req.Settings),
+	})
 	if err != nil {
 		msg := err.Error()
-		if msg == "请选择有效的音色" {
-			response.Fail404(c, msg)
+		if strings.Contains(msg, "有效的音色") {
+			response.Fail404(c, "请选择有效的音色")
 			return
 		}
-		response.Fail400(c, msg)
+		response.Fail(c, 500, 500, "配音服务暂时不可用")
 		return
 	}
-
-	response.TaskCreated(c, taskID)
+	response.TaskCreated(c, resp.TaskId)
 }
 
 // GetRecords GET /api/dubbing/records
@@ -136,15 +157,19 @@ func (h *Handler) GetRecords(c *gin.Context) {
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 12
 	}
-	offset := (page - 1) * pageSize
 
-	jobs, total, err := h.svc.repo.GetJobs(userID, search, offset, pageSize)
+	resp, err := h.client.GetRecords(c.Request.Context(), &dubbing.GetRecordsReq{
+		UserID:   int64(userID),
+		Search:   search,
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	})
 	if err != nil {
-		response.Fail400(c, "获取记录失败")
+		response.Fail(c, 500, 500, "配音服务暂时不可用")
 		return
 	}
 
-	response.Paginated(c, jobs, total, page, pageSize)
+	response.Paginated(c, resp.Items, resp.Total, int(resp.Page), int(resp.PageSize))
 }
 
 // DeleteRecord DELETE /api/dubbing/records/:id
@@ -156,8 +181,16 @@ func (h *Handler) DeleteRecord(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.repo.DeleteJob(uint(jobID), userID); err != nil {
-		response.Fail400(c, "删除失败")
+	ok, err := h.client.DeleteRecord(c.Request.Context(), &dubbing.DeleteRecordReq{
+		UserID: int64(userID),
+		JobID:  int64(jobID),
+	})
+	if err != nil {
+		response.Fail(c, 500, 500, "配音服务暂时不可用")
+		return
+	}
+	if !ok {
+		response.Fail400(c, "删除失败，记录不存在")
 		return
 	}
 

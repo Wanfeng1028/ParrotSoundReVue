@@ -31,6 +31,67 @@ services:
       timeout: 3s
       retries: 5
 
+  # 阶段 2：etcd 服务注册与发现
+  etcd:
+    image: bitnami/etcd:3.5
+    container_name: parrot-etcd
+    environment:
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+    ports:
+      - "2379:2379"
+    volumes:
+      - etcd_data:/bitnami/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 阶段 2：dubbing-service 微服务
+  dubbing-service:
+    build:
+      context: .
+      target: dubbing-service
+    container_name: parrot-dubbing
+    env_file: .env
+    environment:
+      ETCD_ADDR: etcd:2379
+      DUBBING_SERVICE_PORT: "8888"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 网关（Gin HTTP 服务）
+  server:
+    build:
+      context: .
+      target: gateway
+    container_name: parrot-server
+    env_file: .env
+    environment:
+      ETCD_ADDR: etcd:2379
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+      dubbing-service:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   pg_data:
   redis_data:
+  etcd_data:

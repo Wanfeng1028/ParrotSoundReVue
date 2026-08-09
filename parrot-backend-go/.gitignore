@@ -1,11 +1,12 @@
 # 环境变量（含密钥，禁止提交）
 .env
 
-# 编译产物（只忽略根目录下的，避免误伤 cmd/server/ 和 cmd/worker/）
+# 编译产物（只忽略根目录下的，避免误伤 cmd/ 子目录）
 *.exe
 *.exe~
 /server
 /worker
+/dubbing-service
 
 # 上传文件
 uploads/
