@@ -1,11 +1,11 @@
 # 环境变量（含密钥，禁止提交）
 .env
 
-# 编译产物
+# 编译产物（只忽略根目录下的，避免误伤 cmd/server/ 和 cmd/worker/）
 *.exe
 *.exe~
-server
-worker
+/server
+/worker
 
 # 上传文件
 uploads/
