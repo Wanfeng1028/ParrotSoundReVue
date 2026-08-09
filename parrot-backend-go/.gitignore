@@ -1,0 +1,24 @@
+# 环境变量（含密钥，禁止提交）
+.env
+
+# 编译产物
+*.exe
+*.exe~
+server
+worker
+
+# 上传文件
+uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Go 测试覆盖率
+*.out
+coverage.txt
